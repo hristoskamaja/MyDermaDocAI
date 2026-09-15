@@ -1,5 +1,6 @@
 import uuid
 
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
 from rest_framework import status
@@ -20,6 +21,7 @@ from .services.gemini_service import (
     generate_recommendations_with_gemini,
     generate_chat_answer,
 )
+from .services.pdf_service import build_analysis_pdf
 
 MAX_CHAT_HISTORY_MESSAGES = 10
 MAX_CHAT_QUESTION_LENGTH = 500
@@ -244,6 +246,38 @@ def analysis_detail(request, id):
 
     serializer = AnalysisDetailSerializer(analysis, context={"request": request})
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def analysis_pdf(request, id):
+    """
+    Downloadable PDF summary of one analysis - condition, photo, severity/
+    confidence, description/symptoms/treatment, recommendations. Same
+    access rule as analysis_detail (owner or admin only - this is
+    personal health-adjacent data). Language follows the usual ?lang=
+    convention (defaults to mk, matching every other endpoint).
+
+    Returns a plain Django HttpResponse (not a DRF Response) because the
+    body is raw PDF bytes, not JSON - DRF's renderers aren't involved.
+    """
+    analysis = get_object_or_404(
+        Analysis.objects.select_related("user", "condition"),
+        id=id,
+    )
+
+    if not can_access_analysis(request, analysis):
+        return Response(
+            {"detail": "You do not have permission to access this analysis."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    lang = request.query_params.get("lang", "mk")
+    pdf_bytes = build_analysis_pdf(analysis, lang=lang)
+
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{analysis.analysis_key}.pdf"'
+    return response
 
 
 @api_view(["GET"])
