@@ -1,0 +1,22 @@
+# Non-secret settings for the backend Deployment - the sensitive
+# counterparts (SECRET_KEY, DB_PASSWORD, GEMINI_API_KEY) live in
+# 02-backend-secret.yaml instead, never here.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: skinscan
+data:
+  # See docker-compose.yml for why this stays "True" here - it's what
+  # lets Django serve /media/ itself (skin_scan/urls.py) without a
+  # separate shared static/media volume between the web and backend
+  # Deployments, which is out of scope for this assignment.
+  DEBUG: "True"
+  DB_ENGINE: "postgres"
+  DB_NAME: "skinscan"
+  DB_USER: "postgres"
+  # "postgres" here is the postgres Service name (08-postgres-service.yaml)
+  # - Kubernetes' in-cluster DNS resolves it to the StatefulSet's pod(s),
+  # same idea as "backend"/"web" resolving via their own Services.
+  DB_HOST: "postgres"
+  DB_PORT: "5432"

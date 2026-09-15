@@ -1,0 +1,51 @@
+# Remember to replace YOUR_DOCKERHUB_USERNAME below with your real Docker
+# Hub username (same image your GitHub Actions workflow pushes to - see
+# .github/workflows/docker-publish.yml) before applying this file.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: skinscan
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: YOUR_DOCKERHUB_USERNAME/skinscan-backend:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secrets
+          volumeMounts:
+            - name: media
+              mountPath: /app/media
+          # entrypoint.sh already retries on the DB for up to a minute
+          # before starting gunicorn (see skin_backend/entrypoint.sh), so
+          # a plain TCP check on 8000 is enough here - by the time it
+          # answers, migrations have already run.
+          readinessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: backend-media

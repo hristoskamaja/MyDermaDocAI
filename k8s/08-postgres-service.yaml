@@ -1,0 +1,18 @@
+# Headless (clusterIP: None) - this is what gives the StatefulSet's pod a
+# stable, predictable DNS name (postgres-0.postgres.skinscan.svc...)
+# instead of a load-balanced ClusterIP, which is the whole point of
+# pairing a Service with a StatefulSet rather than a plain Deployment.
+# Also the name the backend's DB_HOST (01-backend-configmap.yaml)
+# connects to.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: skinscan
+spec:
+  clusterIP: None
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

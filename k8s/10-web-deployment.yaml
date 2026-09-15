@@ -1,0 +1,41 @@
+# Remember to replace YOUR_DOCKERHUB_USERNAME below with your real Docker
+# Hub username before applying this file (same as 04-backend-deployment.yaml).
+#
+# No ConfigMap/Secret here - REACT_APP_API_URL is baked into the built JS
+# bundle at image-build time as a relative "/api" (see skin_web/Dockerfile),
+# not read from the environment at container start, so there's nothing
+# runtime-configurable to inject.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: skinscan
+  labels:
+    app: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: YOUR_DOCKERHUB_USERNAME/skinscan-web:latest
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 15
