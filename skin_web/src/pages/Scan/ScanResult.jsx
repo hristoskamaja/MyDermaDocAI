@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ImageIcon, Info, ArrowUp, RefreshCw, History as HistoryIcon, Contact } from 'lucide-react';
+import { ImageIcon, Info, ArrowUp, RefreshCw, History as HistoryIcon, Contact, Download } from 'lucide-react';
 import { useLang } from '../../context/LanguageContext';
 import { analysesAPI, conditionsAPI } from '../../services/api';
+import PageHeroWave from '../../components/decor/PageHeroWave';
 import './ScanResult.css';
 
 // ── Severity badge (mirrors the admin Conditions page visual language) ─────
-function SeverityBadge({ severity, t }) {
+// `light` renders a translucent-white pill for use on the dark hero band,
+// instead of the color-coded pill used everywhere else in the app.
+function SeverityBadge({ severity, t, light }) {
+    if (light) {
+        const labels = { LOW: t('conditions.low'), MEDIUM: t('conditions.medium'), HIGH: t('conditions.high') };
+        return <span className="sev-pill sev-pill--onDark">{labels[severity] || severity}</span>;
+    }
     const cls = { LOW: 'sev-pill--low', MEDIUM: 'sev-pill--medium', HIGH: 'sev-pill--high' };
     const labels = { LOW: t('conditions.low'), MEDIUM: t('conditions.medium'), HIGH: t('conditions.high') };
     return <span className={`sev-pill ${cls[severity] || ''}`}>{labels[severity] || severity}</span>;
@@ -131,6 +138,8 @@ export default function ScanResult() {
     const [recommendations, setRecommendations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [downloadingPdf, setDownloadingPdf] = useState(false);
+    const [pdfError, setPdfError] = useState('');
 
     useEffect(() => {
         let cancelled = false;
@@ -163,6 +172,33 @@ export default function ScanResult() {
         return () => { cancelled = true; };
     }, [id]);
 
+    // Downloaded as a blob (not a plain <a href>) because /analyses/:id/pdf/
+    // is a protected endpoint - the request needs the same Authorization
+    // header api.js's interceptor attaches to every other call. A temporary
+    // <a> + object URL triggers the browser's normal "Save As" behavior
+    // once the blob has actually arrived.
+    const handleDownloadPdf = async () => {
+        if (downloadingPdf) return;
+        setDownloadingPdf(true);
+        setPdfError('');
+        try {
+            const res = await analysesAPI.downloadPdf(id);
+            const blobUrl = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `${analysis?.analysis_key || 'scan-result'}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error('PDF download error:', err);
+            setPdfError(t('result.downloadPdfError'));
+        } finally {
+            setDownloadingPdf(false);
+        }
+    };
+
     if (loading) return <div className="scan-result-loading">{t('common.loading')}</div>;
 
     if (error || !analysis) {
@@ -176,6 +212,7 @@ export default function ScanResult() {
 
     const { condition } = analysis;
     const pct = Math.round((analysis.confidence || 0) * 100);
+    const scanDate = analysis.created_at ? analysis.created_at.slice(0, 10) : null;
     const groupedRecs = REC_GROUPS.map(g => ({
         ...g,
         items: recommendations.filter(r => r.type === g.type),
@@ -183,54 +220,63 @@ export default function ScanResult() {
 
     return (
         <div className="scan-result-page">
-            <div className="result-image-wrap">
-                {analysis.image
-                    ? <img src={analysis.image} alt={condition?.name} className="result-image" />
-                    : <div className="result-image-placeholder"><ImageIcon size={30} strokeWidth={1.5} /></div>}
+            <div className="page-hero-band">
+                <PageHeroWave />
             </div>
 
-            {analysis.is_low_confidence && (
-                <div className="result-low-conf-banner">{t('result.lowConfidenceWarn')}</div>
-            )}
-
-            <div className="result-header">
-                <SeverityBadge severity={condition?.severity} t={t} />
+            <div className="result-title-block">
+                <div className="result-title-row">
+                    <SeverityBadge severity={condition?.severity} t={t} />
+                    {scanDate && <span className="result-date">{scanDate}</span>}
+                </div>
                 <h1 className="result-title">{condition?.name}</h1>
             </div>
 
-            <div className="result-confidence">
-                <div className="result-confidence-row">
-                    <span>{t('result.confidence')}</span>
-                    <strong>{pct}%</strong>
+            <div className="result-card">
+                <div className="result-image-wrap">
+                    {analysis.image
+                        ? <img src={analysis.image} alt={condition?.name} className="result-image" />
+                        : <div className="result-image-placeholder"><ImageIcon size={30} strokeWidth={1.5} /></div>}
                 </div>
-                <div className="result-confidence-bar">
-                    <div
-                        className={`result-confidence-fill ${analysis.is_low_confidence ? 'result-confidence-fill--low' : ''}`}
-                        style={{ width: `${pct}%` }}
-                    />
+
+                <div className="result-confidence">
+                    <div className="result-confidence-row">
+                        <span>{t('result.confidence')}</span>
+                        <strong>{pct}%</strong>
+                    </div>
+                    <div className="result-confidence-bar">
+                        <div className="result-confidence-fill" style={{ width: `${pct}%` }} />
+                    </div>
                 </div>
+
+                {analysis.is_low_confidence && (
+                    <div className="result-low-conf-banner">{t('result.lowConfidenceWarn')}</div>
+                )}
+
+                {condition?.description && (
+                    <div className="result-section">
+                        <div className="result-section-title">{t('result.description')}</div>
+                        <p className="result-section-text">{condition.description}</p>
+                    </div>
+                )}
+
+                {condition?.symptoms && (
+                    <div className="result-section">
+                        <div className="result-section-title">{t('result.symptoms')}</div>
+                        <p className="result-section-text">{condition.symptoms}</p>
+                    </div>
+                )}
+
+                {condition?.treatment_overview && (
+                    <div className="result-section">
+                        <div className="result-section-title">{t('result.treatmentOverview')}</div>
+                        <p className="result-section-text">{condition.treatment_overview}</p>
+                    </div>
+                )}
             </div>
 
-            {condition?.description && (
-                <p className="result-description">{condition.description}</p>
-            )}
-
-            {condition?.symptoms && (
-                <div className="result-section">
-                    <div className="result-section-title">{t('result.symptoms')}</div>
-                    <p className="result-section-text">{condition.symptoms}</p>
-                </div>
-            )}
-
-            {condition?.treatment_overview && (
-                <div className="result-section">
-                    <div className="result-section-title">{t('result.treatmentOverview')}</div>
-                    <p className="result-section-text">{condition.treatment_overview}</p>
-                </div>
-            )}
-
             {groupedRecs.length > 0 && (
-                <div className="result-recs">
+                <div className="result-card result-recs">
                     {groupedRecs.map(g => (
                         <div key={g.type} className={`rec-section ${g.cls}`}>
                             <div className="rec-section-title">{t(g.labelKey)}</div>
@@ -260,12 +306,19 @@ export default function ScanResult() {
                 <button className="btn btn--primary" onClick={() => navigate('/scan')}>
                     <RefreshCw size={15} strokeWidth={1.8} /> {t('result.scanAgain')}
                 </button>
+                <button className="btn btn--secondary" onClick={handleDownloadPdf} disabled={downloadingPdf}>
+                    <Download size={15} strokeWidth={1.8} />
+                    {downloadingPdf ? t('result.downloadingPdf') : t('result.downloadPdf')}
+                </button>
                 <button className="btn btn--secondary" onClick={() => navigate('/history')}>
                     <HistoryIcon size={15} strokeWidth={1.8} /> {t('result.backToHistory')}
                 </button>
             </div>
+            {pdfError && <div className="result-low-conf-banner">{pdfError}</div>}
 
-            <AnalysisChat analysisId={analysis.id} t={t} />
+            <div className="result-card">
+                <AnalysisChat analysisId={analysis.id} t={t} />
+            </div>
         </div>
     );
 }

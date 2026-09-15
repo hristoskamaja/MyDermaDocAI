@@ -5,6 +5,13 @@ django-cors-headers==4.7.0
 python-dotenv==1.2.2
 Pillow==12.2.0
 google-genai==2.0.0
+reportlab==4.2.5
+
+# Production WSGI server (Docker/K8s) - manage.py runserver is dev-only.
+gunicorn==23.0.0
+# Serves Django's own /static/ (admin CSS/JS) straight from the app
+# process - no nginx <-> Django shared volume needed for that part.
+whitenoise==6.8.2
 numpy<2
 torch>=2.2,<2.4
 torchvision>=0.17,<0.19

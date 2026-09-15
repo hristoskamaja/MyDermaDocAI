@@ -96,6 +96,10 @@ export const analysesAPI = {
     // Chat Q&A for a specific analysis
     getChat:      (id)       => api.get(`/analyses/${id}/chat/`),
     sendChatMessage: (id, data) => api.post(`/analyses/${id}/chat/`, data),
+    // PDF summary - responseType 'blob' because this is a binary file, not
+    // JSON, and the request still needs the interceptor's Authorization
+    // header (it's a protected endpoint), so it can't be a plain <a href>.
+    downloadPdf:  (id)   => api.get(`/analyses/${id}/pdf/`, { responseType: 'blob' }),
 };
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
