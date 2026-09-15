@@ -57,6 +57,11 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # Right after SecurityMiddleware (whitenoise's own requirement) - serves
+    # /static/ (Django admin's CSS/JS) directly from the gunicorn process
+    # in Docker/K8s, where there's no `manage.py runserver` auto-serving
+    # static files and no nginx <-> Django shared volume for them.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -147,7 +152,28 @@ USE_TZ = True
 
 # --- Static / Media ---
 
-STATIC_URL = "static/"
+# Deliberately a different prefix from React's own build output (which
+# also serves files under /static/js/, /static/css/ from the SAME nginx
+# container) - without this, nginx's /static/ proxy rule to Django
+# swallows React's own JS/CSS requests too, and Django's 404 HTML
+# response gets served back with the wrong MIME type.
+STATIC_URL = "django-static/"
+# Only used by `collectstatic` (Docker/K8s build step) + whitenoise above -
+# local dev with `manage.py runserver` never touches this.
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    # Uploaded scan photos (Analysis.image) - plain local disk storage,
+    # same as Django's implicit default before Django 4.2 required this
+    # dict to be spelled out explicitly. Missing this key is what caused
+    # "Could not find config for 'default' in settings.STORAGES" the
+    # moment scan-skin tried to save an uploaded image.
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
