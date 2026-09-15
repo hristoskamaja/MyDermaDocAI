@@ -84,6 +84,46 @@
     --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
 }
 
+/* ── Patient app theme override: cream & brown (matches the mobile app) ──────
+   Scoped to .theme-patient (applied to PatientLayout + Login/Register), so
+   the admin panel keeps its existing indigo/teal look untouched. ────────── */
+.theme-patient {
+    --bg:            #f5ead9;
+    --surface:       #ffffff;
+    --surface2:      #f0e2cc;
+    --border:        #e3d2b8;
+
+    --text:          #2b1a10;
+    --text-muted:    #8a7360;
+    --text-light:    #b5a190;
+
+    --primary:       #7b4b2a;
+    --primary-soft:  #f0dfc8;
+    --teal:          #4e2f1a;
+
+    --low:           #6e8b4f;
+    --low-bg:        #e7eedd;
+
+    --med:           #c08a3e;
+    --med-bg:        #f7e9d2;
+
+    --high:          #b5482f;
+    --high-bg:       #f6dcd3;
+
+    --info:          #8a6a4a;
+    --info-bg:       #f0e6d8;
+
+    --other:         #8a7360;
+    --other-bg:      #f0e2cc;
+
+    --shadow-sm: 0 1px 4px rgba(43,26,16,0.06);
+    --shadow-md: 0 4px 16px rgba(43,26,16,0.10);
+}
+
+/* Dark mode intentionally has no .theme-patient override: patient pages
+   fall back to the same dark theme as the admin panel, unchanged from
+   before this redesign. Only light mode gets the new Sage & Stone look. */
+
 html { font-size: 16px; }
 
 body {

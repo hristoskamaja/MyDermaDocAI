@@ -14,6 +14,7 @@ import AnalysisHistory from './pages/AnalysisHistory/AnalysisHistory';
 import Statistics from './pages/Statistics/Statistics';
 import Settings from './pages/Settings/Settings';
 import Profile from './pages/Profile/Profile';
+import Home from './pages/Home/Home';
 import Scan from './pages/Scan/Scan';
 import ScanResult from './pages/Scan/ScanResult';
 import History from './pages/History/History';
@@ -28,7 +29,7 @@ function PrivateRoute({ children }) {
 // rendering. Admins are never restricted from the patient-facing pages.
 function AdminOnly({ children }) {
     const { user } = useAuth();
-    return user?.role === 'ADMIN' ? children : <Navigate to="/scan" replace />;
+    return user?.role === 'ADMIN' ? children : <Navigate to="/home" replace />;
 }
 
 // Picks the right shell for the logged-in user's role. A USER account never
@@ -40,7 +41,7 @@ function RoleLayout() {
 
 function HomeRedirect() {
     const { user } = useAuth();
-    return <Navigate to={user?.role === 'ADMIN' ? '/dashboard' : '/scan'} replace />;
+    return <Navigate to={user?.role === 'ADMIN' ? '/dashboard' : '/home'} replace />;
 }
 
 function AppRoutes() {
@@ -64,6 +65,7 @@ function AppRoutes() {
                 <Route path="profile"    element={<Profile />} />
 
                 {/* Patient-facing (admins may view these too, just unrestricted) */}
+                <Route path="home"           element={<Home />} />
                 <Route path="scan"           element={<Scan />} />
                 <Route path="scan/:id"       element={<ScanResult />} />
                 <Route path="history"        element={<History />} />
