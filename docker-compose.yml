@@ -1,0 +1,63 @@
+# Local orchestration for all 3 services (web, backend, db) - mirrors the
+# same 3-container shape the Kubernetes manifests in k8s/ deploy, just
+# without a cluster. Run with: docker compose up --build
+#
+# Needs a ".env" file in this same folder first - copy .env.example to
+# .env and fill in real values (see that file's comments).
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-skinscan}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env - see .env.example}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./skin_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env - see .env.example}
+      # Deliberately True even outside local dev, ONLY for this class
+      # assignment's scope - it's what lets Django serve /media/ itself
+      # (see skin_scan/urls.py) without also standing up a shared
+      # nginx<->Django volume just for uploaded scan photos. Not a
+      # real-production setting, a scoped simplification.
+      DEBUG: "True"
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DB_ENGINE: postgres
+      DB_NAME: ${POSTGRES_DB:-skinscan}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_HOST: db
+      DB_PORT: "5432"
+    volumes:
+      - backend_media:/app/media
+    ports:
+      # Optional direct access (e.g. hitting /api/... or /admin/ without
+      # going through the web container) - the app itself is reached
+      # through the web service's nginx on port 3000, same as below.
+      - "8000:8000"
+
+  web:
+    build: ./skin_web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  postgres_data:
+  backend_media:
