@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: YOUR_DOCKERHUB_USERNAME/skinscan-backend:latest
+          image: majahristoska/skinscan-backend:latest
           ports:
             - containerPort: 8000
           envFrom:

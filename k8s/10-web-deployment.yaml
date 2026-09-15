@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: YOUR_DOCKERHUB_USERNAME/skinscan-web:latest
+          image: majahristoska/skinscan-web:latest
           ports:
             - containerPort: 80
           readinessProbe:
