@@ -19,3 +19,11 @@ requests>=2.31,<3
 
 # PostgreSQL driver - потребен бидејќи DB_ENGINE=postgres во .env
 psycopg2-binary==2.9.12
+
+# PDF извештаи (analyses/services/pdf_service.py)
+reportlab==4.2.5
+
+# Production сервер + сервирање на Django-овите static фајлови (admin CSS/JS)
+# во контејнер - види skin_backend/Dockerfile и entrypoint.sh
+gunicorn==23.0.0
+whitenoise==6.8.2

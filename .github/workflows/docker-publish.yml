@@ -1,0 +1,147 @@
+# CI: on every push to main/master, builds both images fresh from that
+# commit (a normal `git clone`, so the gitignored AI model weights file
+# is NOT in this build - see skin_backend/.dockerignore's note) and
+# pushes them to Docker Hub, tagged both "latest" and with the commit
+# SHA (so a specific build can always be pinned/rolled back to, not just
+# whatever "latest" happens to point at right now).
+#
+# CD (bonus - see DOCKER_K8S_GUIDE.md's "CD" section for full setup):
+# after a successful push, the deploy job applies k8s/ and rolls the
+# Deployments over to this exact commit's image, against whatever
+# cluster the self-hosted runner's kubectl is pointed at - Docker
+# Desktop's local Kubernetes, in this project's case. Gated behind the
+# CD_ENABLED repo variable so pushes don't touch your laptop's cluster
+# unless you've deliberately turned it on.
+#
+# Needs repo secrets first (Settings -> Secrets and variables -> Actions
+# -> New repository secret):
+#   DOCKERHUB_USERNAME - your Docker Hub username
+#   DOCKERHUB_TOKEN     - a Docker Hub Access Token (Docker Hub ->
+#                          Account Settings -> Security -> New Access
+#                          Token), NOT your account password.
+#   DJANGO_SECRET_KEY, DB_PASSWORD, GEMINI_API_KEY - same values you put
+#                          in k8s/02-backend-secret.yaml / 07-postgres-
+#                          secret.yaml - the CD job generates those
+#                          Secrets from these instead of needing the
+#                          gitignored *-secret.yaml files to exist on
+#                          the runner.
+# And a repo variable (Settings -> Secrets and variables -> Actions ->
+# Variables tab): CD_ENABLED = true (once the self-hosted runner is set
+# up and ready - see the guide).
+name: Build and push Docker images
+
+on:
+  push:
+    # "docker-k8s" is temporary here, only so CI can be test-run via a
+    # push before this branch is merged into master - GitHub's manual
+    # "Run workflow" button only works once a workflow file exists on the
+    # repo's default branch, which isn't the case yet. Remove "docker-k8s"
+    # from this list once merged (see DOCKER_K8S_GUIDE.md's CI section).
+    branches: [main, master, docker-k8s]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./skin_backend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/skinscan-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/skinscan-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./skin_web
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/skinscan-web:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/skinscan-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # CD - only runs once CD_ENABLED is set to "true" as a repo Variable
+  # (Settings -> Secrets and variables -> Actions -> Variables), and only
+  # on a self-hosted runner (this job has no meaning on GitHub's own
+  # cloud runners - they can't reach a laptop's local Kubernetes API).
+  # See DOCKER_K8S_GUIDE.md's "CD" section for how to register one.
+  deploy:
+    needs: build-and-push
+    if: vars.CD_ENABLED == 'true'
+    runs-on: self-hosted
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Apply namespace, config and secrets
+        # "powershell" (Windows PowerShell 5.1, built into every Windows
+        # machine), not "pwsh" (PowerShell 7+, a separate install this
+        # runner's machine doesn't have - that's what "pwsh: command not
+        # found" meant). Backtick line-continuation below works the same
+        # in both.
+        shell: powershell
+        run: |
+          kubectl apply -f k8s/00-namespace.yaml
+          kubectl apply -f k8s/01-backend-configmap.yaml
+          kubectl apply -f k8s/06-postgres-configmap.yaml
+
+          # Generated from repo secrets instead of the gitignored
+          # k8s/*-secret.yaml files, which don't exist on a fresh
+          # checkout - --dry-run=client -o yaml | kubectl apply -f - is
+          # the standard "create-or-update" idiom (a plain
+          # `kubectl create secret` would fail with AlreadyExists on
+          # every run after the first).
+          kubectl create secret generic backend-secrets `
+            --namespace skinscan `
+            --from-literal=SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" `
+            --from-literal=DB_PASSWORD="${{ secrets.DB_PASSWORD }}" `
+            --from-literal=GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" `
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create secret generic postgres-secrets `
+            --namespace skinscan `
+            --from-literal=POSTGRES_PASSWORD="${{ secrets.DB_PASSWORD }}" `
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply the rest of the manifests
+        shell: powershell
+        run: |
+          kubectl apply -f k8s/03-backend-media-pvc.yaml
+          kubectl apply -f k8s/04-backend-deployment.yaml
+          kubectl apply -f k8s/05-backend-service.yaml
+          kubectl apply -f k8s/08-postgres-service.yaml
+          kubectl apply -f k8s/09-postgres-statefulset.yaml
+          kubectl apply -f k8s/10-web-deployment.yaml
+          kubectl apply -f k8s/11-web-service.yaml
+          kubectl apply -f k8s/12-ingress.yaml
+
+      - name: Roll out this exact commit's images
+        shell: powershell
+        # `kubectl apply` on an unchanged Deployment YAML (still just
+        # says ":latest") wouldn't actually create new Pods, so this is
+        # what makes each push really deploy - pins both Deployments to
+        # the SHA-tagged image built above, which forces a real rollout
+        # every time.
+        run: |
+          kubectl set image deployment/backend backend=${{ secrets.DOCKERHUB_USERNAME }}/skinscan-backend:${{ github.sha }} -n skinscan
+          kubectl set image deployment/web web=${{ secrets.DOCKERHUB_USERNAME }}/skinscan-web:${{ github.sha }} -n skinscan
+          kubectl rollout status deployment/backend -n skinscan --timeout=180s
+          kubectl rollout status deployment/web -n skinscan --timeout=120s

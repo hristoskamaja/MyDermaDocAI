@@ -3,6 +3,7 @@ import { Lock, Check, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { jwtAPI } from '../../services/api';
 import { useLang } from '../../context/LanguageContext';
+import PageHeroWave from '../../components/decor/PageHeroWave';
 import './Profile.css';
 
 export default function Profile() {
@@ -67,10 +68,15 @@ export default function Profile() {
 
     return (
         <div className="profile-page">
-            <div className="page-header">
-                <div>
-                    <h1 className="page-title">{t('profile.title')}</h1>
-                    <p className="page-subtitle">{t('profile.subtitle')}</p>
+            <div className="page-hero-band">
+                <PageHeroWave />
+                <div className="page-hero-inner">
+                    <div className="page-header">
+                        <div>
+                            <h1 className="page-title">{t('profile.title')}</h1>
+                            <p className="page-subtitle">{t('profile.subtitle')}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 

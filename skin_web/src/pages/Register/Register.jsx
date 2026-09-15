@@ -51,7 +51,7 @@ export default function Register() {
             }
             login(access, currentUser);
 
-            navigate(currentUser?.role === 'ADMIN' ? '/dashboard' : '/scan');
+            navigate(currentUser?.role === 'ADMIN' ? '/dashboard' : '/home');
         } catch (err) {
             console.error('Register error:', err);
             const data = err.response?.data;
@@ -66,7 +66,7 @@ export default function Register() {
     };
 
     return (
-        <div className="login-page">
+        <div className="login-page theme-patient">
 
             {/* ── Branded hero panel ───────────────────────────────────────────── */}
             <div className="login-hero">

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cream & brown color palette for DermaScanAI mobile.
-/// Distinct from the web admin's indigo/teal scheme by design.
+/// Cream & brown color palette for DermaScanAI mobile - shared with the
+/// web app's patient-facing pages (see skin_web/src/index.css
+/// .theme-patient), while the web admin panel keeps its own indigo/teal
+/// scheme by design.
 class AppColors {
   final Color background;
   final Color surface;

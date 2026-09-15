@@ -33,7 +33,7 @@ export default function Login() {
             const meRes = await jwtAPI.me();
             login(access, meRes.data);
 
-            navigate(meRes.data.role === 'ADMIN' ? '/dashboard' : '/scan');
+            navigate(meRes.data.role === 'ADMIN' ? '/dashboard' : '/home');
         } catch (err) {
             console.error('Login error:', err);
             setError(
@@ -47,7 +47,7 @@ export default function Login() {
     };
 
     return (
-        <div className="login-page">
+        <div className="login-page theme-patient">
 
             {/* ── Branded hero panel ───────────────────────────────────────────── */}
             <div className="login-hero">

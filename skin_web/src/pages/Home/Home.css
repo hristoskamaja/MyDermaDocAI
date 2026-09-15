@@ -1,0 +1,159 @@
+/* ── Home Page (patient) ──────────────────────────────────────────────────── */
+.home-page { display: flex; flex-direction: column; }
+
+.btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px; border-radius: 9px;
+    font-size: 13.5px; font-weight: 700; border: none;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s, background 0.15s, color 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.9; }
+.btn:active { transform: scale(0.97); }
+.btn--primary { background: var(--primary); color: #fff; }
+
+/* Full-bleed hero band - breaks out of the page's centered max-width so the
+   colored backdrop spans the full browser width, like a real landing page. */
+.home-hero-band {
+    position: relative;
+    left: 50%;
+    right: 50%;
+    width: 100vw;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    min-height: 420px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    margin-top: -36px;
+}
+.home-hero-wave {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+}
+.home-hero-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1080px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 60px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    flex-wrap: wrap;
+}
+.home-hero-text { max-width: 460px; flex: 1; min-width: 280px; }
+.home-eyebrow {
+    display: inline-block;
+    font-size: 12.5px; font-weight: 700; color: #fff;
+    background: rgba(255,255,255,0.18);
+    border-radius: 999px; padding: 5px 14px;
+    margin-bottom: 16px;
+}
+.home-name {
+    font-size: 36px; font-weight: 800; color: #fff;
+    letter-spacing: -0.6px; line-height: 1.15; margin-bottom: 12px;
+}
+.home-hero-sub { font-size: 14.5px; color: rgba(255,255,255,0.85); line-height: 1.6; margin-bottom: 26px; max-width: 400px; }
+.home-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.btn--hero-primary { background: #fff; color: var(--primary); }
+.btn--hero-outline { background: transparent; border: 1.5px solid rgba(255,255,255,0.5); color: #fff; }
+.btn--hero-outline:hover { border-color: #fff; opacity: 1; background: rgba(255,255,255,0.12); }
+
+.home-hero-art { width: 300px; height: 250px; flex-shrink: 0; }
+
+/* Full-bleed feature band - same "wide colored band" idea as the hero,
+   sitting right below it, like a value-proposition strip on a real site. */
+.home-features-band {
+    position: relative;
+    left: 50%;
+    right: 50%;
+    width: 100vw;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+.home-features-inner { max-width: 1080px; margin: 0 auto; padding: 40px 48px; }
+.home-features-heading {
+    text-align: center;
+    font-size: 13px; font-weight: 700; color: var(--text-muted);
+    letter-spacing: 0.6px; text-transform: uppercase;
+    margin-bottom: 28px;
+}
+.home-features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.home-feature { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+.home-feature-icon {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    box-shadow: var(--shadow-sm);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 6px;
+}
+.home-feature-title { font-size: 14.5px; font-weight: 700; color: var(--text); }
+.home-feature-sub { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; max-width: 240px; }
+
+.home-page-inner { display: flex; flex-direction: column; gap: 20px; padding: 44px 0 0; }
+.home-section-heading { font-size: 12px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.6px; text-transform: uppercase; }
+
+.home-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.home-tile {
+    display: flex; flex-direction: column; gap: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--primary);
+    border-radius: var(--radius-lg); padding: 18px 20px;
+    transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.home-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.home-tile-icon {
+    width: 38px; height: 38px; border-radius: 11px;
+    background: var(--primary-soft); color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 4px;
+}
+.home-tile--history { border-left-color: var(--teal); }
+.home-tile--history .home-tile-icon { background: var(--low-bg); color: var(--teal); }
+.home-tile--latest { border-left-color: var(--med); }
+.home-tile--latest .home-tile-icon { background: var(--med-bg); color: var(--med); }
+.home-tile--derm { border-left-color: var(--primary); }
+.home-tile-title { font-size: 14.5px; font-weight: 700; color: var(--text); }
+.home-tile-sub { font-size: 12.5px; color: var(--text-muted); }
+
+.home-tile-latest-body { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.home-tile-latest-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
+
+.home-tip {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    border-radius: var(--radius-lg); padding: 14px 18px;
+    font-size: 13px; line-height: 1.5;
+}
+.home-tip svg { color: var(--primary); flex-shrink: 0; margin-top: 1px; }
+
+@media (max-width: 900px) {
+    .home-hero-inner { padding: 44px 32px; flex-direction: column-reverse; text-align: center; }
+    .home-hero-actions { justify-content: center; }
+    .home-hero-sub { max-width: none; margin-left: auto; margin-right: auto; }
+    .home-hero-art { width: 220px; height: 190px; }
+    .home-hero-band { min-height: auto; }
+}
+@media (max-width: 720px) {
+    .home-grid { grid-template-columns: 1fr; }
+    .home-features-grid { grid-template-columns: 1fr; gap: 24px; }
+    .home-features-inner { padding: 32px 24px; }
+}
+
+/* Severity pill (duplicated from History.css - each page CSS file is self-contained) */
+.sev-pill {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 99px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.2px;
+}
+.sev-pill--low    { background: var(--low-bg);  color: var(--low); }
+.sev-pill--medium { background: var(--med-bg);  color: var(--med); }
+.sev-pill--high   { background: var(--high-bg); color: var(--high); }

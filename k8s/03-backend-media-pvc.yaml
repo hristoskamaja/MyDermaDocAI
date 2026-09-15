@@ -1,0 +1,16 @@
+# Without this, uploaded scan photos would live in the backend Pod's
+# writable container layer - gone the moment that Pod is rescheduled or
+# restarted. Docker Desktop's built-in Kubernetes ships a default
+# StorageClass (hostpath-based) that provisions this automatically, no
+# extra setup needed.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-media
+  namespace: skinscan
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
