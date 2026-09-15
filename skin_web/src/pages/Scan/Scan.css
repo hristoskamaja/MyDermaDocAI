@@ -1,13 +1,30 @@
 /* ── Scan Page ────────────────────────────────────────────────────────────── */
 .scan-page { display: flex; flex-direction: column; gap: 18px; }
 
+.page-hero-band {
+    position: relative;
+    left: 50%; right: 50%; width: 100vw;
+    margin-left: -50vw; margin-right: -50vw;
+    margin-top: -36px;
+    min-height: 230px;
+    display: flex; align-items: center;
+    overflow: hidden;
+}
+.page-hero-wave { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+.page-hero-inner { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; width: 100%; padding: 0 48px; }
+
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.page-title    { font-size: 24px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
-.page-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+.page-title    { font-size: 30px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+.page-subtitle { font-size: 14.5px; color: rgba(255,255,255,0.82); margin-top: 6px; }
+
+@media (max-width: 900px) {
+    .page-hero-inner { padding: 0 32px; }
+}
 
 .scan-card {
     background: var(--surface);
     border: 1px solid var(--border);
+    border-top: 3px solid var(--primary);
     border-radius: var(--radius-xl);
     padding: 24px;
     display: flex;
@@ -33,8 +50,9 @@
 .scan-dropzone-icon {
     width: 56px; height: 56px;
     border-radius: 50%;
-    background: var(--surface2);
-    color: var(--primary);
+    background: var(--primary);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
     display: flex; align-items: center; justify-content: center;
 }
 .scan-dropzone-text { font-size: 14.5px; font-weight: 700; color: var(--text); }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Camera, ImageIcon, X, AlertTriangle } from 'lucide-react';
 import { useLang } from '../../context/LanguageContext';
 import { analysesAPI } from '../../services/api';
+import PageHeroWave from '../../components/decor/PageHeroWave';
 import './Scan.css';
 
 export default function Scan() {
@@ -82,10 +83,15 @@ export default function Scan() {
 
     return (
         <div className="scan-page">
-            <div className="page-header">
-                <div>
-                    <h1 className="page-title">{t('scan.title')}</h1>
-                    <p className="page-subtitle">{t('scan.subtitle')}</p>
+            <div className="page-hero-band">
+                <PageHeroWave />
+                <div className="page-hero-inner">
+                    <div className="page-header">
+                        <div>
+                            <h1 className="page-title">{t('scan.title')}</h1>
+                            <p className="page-subtitle">{t('scan.subtitle')}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
