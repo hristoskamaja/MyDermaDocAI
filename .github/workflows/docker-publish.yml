@@ -32,12 +32,7 @@ name: Build and push Docker images
 
 on:
   push:
-    # "docker-k8s" is temporary here, only so CI can be test-run via a
-    # push before this branch is merged into master - GitHub's manual
-    # "Run workflow" button only works once a workflow file exists on the
-    # repo's default branch, which isn't the case yet. Remove "docker-k8s"
-    # from this list once merged (see DOCKER_K8S_GUIDE.md's CI section).
-    branches: [main, master, docker-k8s]
+    branches: [main, master]
   workflow_dispatch: {}
 
 jobs:
