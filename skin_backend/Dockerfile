@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM python:3.11-slim
 
-ARG MODEL_URL="https://github.com/hristoskamaja/MyDermaDocAi/releases/download/model-v1/skin_model.pt"
+ARG MODEL_URL="https://github.com/hristoskamaja/MyDermaDocAI/releases/download/model-v1/skin_model.pt"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
