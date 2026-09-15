@@ -58,6 +58,7 @@ RUN if [ -f analyses/services/ai_model/skin_model.pt ]; then \
         echo "Using local skin_model.pt"; \
     else \
         echo "skin_model.pt not found locally, downloading from $MODEL_URL..." \
+        && mkdir -p analyses/services/ai_model \
         && curl -fL "$MODEL_URL" -o analyses/services/ai_model/skin_model.pt; \
     fi
 
