@@ -377,6 +377,9 @@ const TRANSLATIONS = {
             lowConfidenceWarn: 'Uncertain result — low model confidence. Consider a follow-up scan or professional review.',
             backToHistory:     'Back to history',
             findDermatologistLink: 'Find a dermatologist',
+            downloadPdf:       'Download PDF',
+            downloadingPdf:    'Preparing PDF…',
+            downloadPdfError:  'Could not generate the PDF. Please try again.',
         },
 
         // ── History ───────────────────────────────────────────────────────────────
@@ -774,6 +777,9 @@ const TRANSLATIONS = {
             lowConfidenceWarn: 'Несигурен резултат — ниска доверливост на моделот. Разгледајте повторно скенирање или стручен преглед.',
             backToHistory:     'Назад кон историјата',
             findDermatologistLink: 'Најди дерматолог',
+            downloadPdf:       'Преземи PDF',
+            downloadingPdf:    'Се подготвува PDF…',
+            downloadPdfError:  'Не можев да го генерирам PDF-от. Обиди се повторно.',
         },
 
         // ── History ───────────────────────────────────────────────────────────────
