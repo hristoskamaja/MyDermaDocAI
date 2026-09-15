@@ -1,10 +1,5 @@
 # Remember to replace YOUR_DOCKERHUB_USERNAME below with your real Docker
-# Hub username before applying this file (same as 04-backend-deployment.yaml).
-#
-# No ConfigMap/Secret here - REACT_APP_API_URL is baked into the built JS
-# bundle at image-build time as a relative "/api" (see skin_web/Dockerfile),
-# not read from the environment at container start, so there's nothing
-# runtime-configurable to inject.
+# Hub username before applying this file.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

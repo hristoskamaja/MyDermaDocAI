@@ -1,5 +1,3 @@
-# Kept OUT of the build context - none of these belong in the image, and
-# some (venv, db.sqlite3) would just bloat it or shadow container-only state.
 .venv/
 venv/
 env/
@@ -16,8 +14,3 @@ staticfiles/
 .env
 .git/
 .gitignore
-
-# NOTE: analyses/services/ai_model/*.pt is intentionally NOT excluded here
-# (unlike .gitignore) - a local `docker build` should pick up your real
-# trained model file from disk. It's only missing when Docker Hub/CI builds
-# from a fresh `git clone`, since the file was never committed to git.

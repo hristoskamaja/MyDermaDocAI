@@ -10,3 +10,5 @@ Thumbs.db
 # Docker/K8s
 .env
 k8s/*-secret.yaml
+DOCKER_K8S_GUIDE.md
+commit_*.ps1

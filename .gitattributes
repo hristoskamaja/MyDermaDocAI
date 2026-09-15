@@ -1,7 +1,1 @@
-# entrypoint.sh (and any other shell script) MUST stay LF, even though
-# Windows' git config here converts other files to CRLF on checkout (see
-# the "LF will be replaced by CRLF" warnings git prints on this repo) -
-# a CRLF shell script fails inside a Linux container with a cryptic
-# "$'\r': command not found" / "no such file or directory" error, since
-# `#!/bin/sh\r` isn't a shebang Linux recognizes.
 *.sh text eol=lf

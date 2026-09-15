@@ -1,19 +1,10 @@
-# Everything routes to the "web" Service - its nginx (skin_web/nginx.conf)
-# is already the single entry point that internally proxies /api, /admin,
-# /static and /media to the backend Service, so the Ingress itself only
-# needs one rule (see the Deployment/Service files for why).
-#
-# No `host:` set on purpose, so this matches any Host header - after
-# installing an ingress controller (see the README/setup guide) and
-# applying this, the app is reachable at plain http://localhost/ with no
-# /etc/hosts editing needed.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: skinscan-ingress
   namespace: skinscan
   annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "20m"  # scan photo uploads
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
 spec:
   ingressClassName: nginx
   rules:

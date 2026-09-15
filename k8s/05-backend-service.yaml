@@ -1,7 +1,3 @@
-# Named "backend" on purpose - skin_web/nginx.conf's `proxy_pass
-# http://backend:8000/...` resolves this exact name via Kubernetes'
-# in-cluster DNS (same name docker-compose.yml's service uses too, so
-# nginx.conf needs zero changes between the two setups).
 apiVersion: v1
 kind: Service
 metadata:

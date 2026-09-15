@@ -1,6 +1,5 @@
 # Remember to replace YOUR_DOCKERHUB_USERNAME below with your real Docker
-# Hub username (same image your GitHub Actions workflow pushes to - see
-# .github/workflows/docker-publish.yml) before applying this file.
+# Hub username before applying this file.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,10 +30,6 @@ spec:
           volumeMounts:
             - name: media
               mountPath: /app/media
-          # entrypoint.sh already retries on the DB for up to a minute
-          # before starting gunicorn (see skin_backend/entrypoint.sh), so
-          # a plain TCP check on 8000 is enough here - by the time it
-          # answers, migrations have already run.
           readinessProbe:
             tcpSocket:
               port: 8000

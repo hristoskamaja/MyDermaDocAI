@@ -1,9 +1,3 @@
-# A plain Deployment would work functionally for a single Postgres
-# instance too, but a StatefulSet is what gives it a stable identity
-# (postgres-0, keeps the SAME PersistentVolumeClaim across restarts/
-# reschedules instead of a fresh one each time a Deployment's Pod
-# churns) - the standard, correct primitive for anything that owns its
-# own disk state, which is exactly what a database is.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -43,12 +37,6 @@ spec:
               command: ["pg_isready", "-U", "postgres"]
             initialDelaySeconds: 15
             periodSeconds: 20
-  # Unlike a Deployment's `volumes:` (one shared volume for every
-  # replica), volumeClaimTemplates provisions a SEPARATE
-  # PersistentVolumeClaim per pod, named
-  # postgres-data-postgres-0/-1/... - only matters once replicas > 1,
-  # but it's the field that actually makes this a StatefulSet instead
-  # of just a Deployment with a database image in it.
   volumeClaimTemplates:
     - metadata:
         name: postgres-data
