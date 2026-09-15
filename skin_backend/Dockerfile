@@ -7,7 +7,7 @@ FROM python:3.11-slim
 # end up with a working model, even though the file itself is gitignored
 # (see skin_backend/.gitignore's comment - it's a large binary, never
 # meant to live in git history).
-ARG MODEL_URL="https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO/releases/download/model-v1/skin_model.pt"
+ARG MODEL_URL="https://github.com/hristoskamaja/MyDermaDocAi/releases/download/model-v1/skin_model.pt"
 
 # Keeps Python from writing .pyc files / buffering stdout - the second one
 # matters most in containers, otherwise `docker logs` can lag behind or
