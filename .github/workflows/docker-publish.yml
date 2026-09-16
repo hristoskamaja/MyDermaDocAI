@@ -95,5 +95,5 @@ jobs:
         run: |
           kubectl set image deployment/backend backend=${{ secrets.DOCKERHUB_USERNAME }}/skinscan-backend:${{ github.sha }} -n skinscan
           kubectl set image deployment/web web=${{ secrets.DOCKERHUB_USERNAME }}/skinscan-web:${{ github.sha }} -n skinscan
-          kubectl rollout status deployment/backend -n skinscan --timeout=180s
-          kubectl rollout status deployment/web -n skinscan --timeout=120s
+          kubectl rollout status deployment/backend -n skinscan --timeout=420s
+          kubectl rollout status deployment/web -n skinscan --timeout=300s
