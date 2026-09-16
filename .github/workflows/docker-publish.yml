@@ -55,6 +55,10 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v4
 
+      - name: Use local Docker Desktop cluster
+        shell: powershell
+        run: kubectl config use-context docker-desktop
+
       - name: Apply namespace, config and secrets
         shell: powershell
         run: |
