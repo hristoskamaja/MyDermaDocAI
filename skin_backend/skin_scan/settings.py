@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "analyses",
     "analytics",
     "jwt_auth",
+    "tracking",
 ]
 
 MIDDLEWARE = [
@@ -177,6 +178,9 @@ STORAGES = {
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Sensitive tracking photos: NOT under MEDIA_ROOT, never served by MEDIA_URL.
+TRACKING_PRIVATE_ROOT = BASE_DIR / "media_private"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

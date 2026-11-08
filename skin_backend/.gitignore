@@ -24,3 +24,6 @@ analyses/services/ai_model/*.pt
 
 # IDE
 .idea/
+
+# Private tracking photos
+media_private/
