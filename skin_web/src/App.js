@@ -19,6 +19,9 @@ import Scan from './pages/Scan/Scan';
 import ScanResult from './pages/Scan/ScanResult';
 import History from './pages/History/History';
 import FindDermatologist from './pages/FindDermatologist/FindDermatologist';
+import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
+import ResetPassword from './pages/ResetPassword/ResetPassword';
+import Track from './pages/Track/Track';
 
 function PrivateRoute({ children }) {
     const { isAuthenticated } = useAuth();
@@ -49,6 +52,8 @@ function AppRoutes() {
         <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<PrivateRoute><RoleLayout /></PrivateRoute>}>
                 <Route index        element={<HomeRedirect />} />
 
@@ -68,6 +73,7 @@ function AppRoutes() {
                 <Route path="home"           element={<Home />} />
                 <Route path="scan"           element={<Scan />} />
                 <Route path="scan/:id"       element={<ScanResult />} />
+                <Route path="track"          element={<Track />} />
                 <Route path="history"        element={<History />} />
                 <Route path="find-dermatologist" element={<FindDermatologist />} />
             </Route>

@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LanguageContext';
 import { jwtAPI } from '../../services/api';
-import './Login.css';
+import AuthShell from '../../components/layout/AuthShell';
 
 export default function Login() {
     const [email,    setEmail]    = useState('');
@@ -47,64 +47,44 @@ export default function Login() {
     };
 
     return (
-        <div className="login-page theme-patient">
-
-            {/* ── Branded hero panel ───────────────────────────────────────────── */}
-            <div className="login-hero">
-                <div className="login-hero-top">
-                    <div className="login-hero-logo-icon">S</div>
-                    <span className="login-hero-brand-name">DermaScanAI</span>
+        <AuthShell>
+            <h1>{t('login.heading')}</h1>
+            <p className="pt-auth-sub">{t('login.patientSubtitle')}</p>
+            <form className="pt-auth-form" onSubmit={handleSubmit}>
+                <div className="pt-field">
+                    <label className="pt-label" htmlFor="login-email">{t('login.emailLabel')}</label>
+                    <input
+                        id="login-email"
+                        className="pt-input"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        autoFocus
+                    />
                 </div>
-
-                <div className="login-hero-content">
-                    <h1 className="login-hero-title">{t('login.headline')}</h1>
-                    <p className="login-hero-sub">{t('login.headlineSub')}</p>
+                <div className="pt-field">
+                    <label className="pt-label" htmlFor="login-password">{t('login.passwordLabel')}</label>
+                    <input
+                        id="login-password"
+                        className="pt-input"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                    />
                 </div>
-
-                <div className="login-hero-footer">DermaScanAI &copy; {new Date().getFullYear()}</div>
-            </div>
-
-            {/* ── Form panel ───────────────────────────────────────────────────── */}
-            <div className="login-form-panel">
-                <div className="login-card">
-                    <div className="login-card-header">
-                        <h2 className="login-card-title">Sign in</h2>
-                        <p className="login-card-sub">{t('login.subtitle')}</p>
-                    </div>
-                    <form className="login-form" onSubmit={handleSubmit}>
-                        <div className="login-field">
-                            <label className="login-label">{t('login.emailLabel')}</label>
-                            <input
-                                className="login-input"
-                                type="email"
-                                placeholder="admin@dermascanai.ai"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                autoFocus
-                            />
-                        </div>
-                        <div className="login-field">
-                            <label className="login-label">{t('login.passwordLabel')}</label>
-                            <input
-                                className="login-input"
-                                type="password"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                            />
-                        </div>
-                        {error && <div className="login-error">{error}</div>}
-                        <button className="login-btn" type="submit" disabled={loading}>
-                            {loading ? t('login.signingIn') : t('login.signInBtn')}
-                        </button>
-                        <button type="button" className="login-forgot">{t('login.forgotPassword')}</button>
-                        <div className="login-register-prompt">
-                            {t('login.noAccount')} <Link to="/register" className="login-register-link">{t('login.signUpLink')}</Link>
-                        </div>
-                    </form>
+                {error && <div className="pt-alert pt-alert--error">{error}</div>}
+                <button className="pt-btn pt-btn--block" type="submit" disabled={loading}>
+                    {loading ? t('login.signingIn') : t('login.signInBtn')}
+                </button>
+                <div className="pt-auth-foot">
+                    <Link to="/forgot-password" className="pt-link">{t('login.forgotPassword')}</Link>
                 </div>
-            </div>
-
-        </div>
+                <div className="pt-auth-foot">
+                    {t('login.noAccount')} <Link to="/register" className="pt-link">{t('login.signUpLink')}</Link>
+                </div>
+            </form>
+        </AuthShell>
     );
 }

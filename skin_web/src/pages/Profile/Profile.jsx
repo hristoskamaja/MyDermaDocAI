@@ -3,7 +3,6 @@ import { Lock, Check, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { jwtAPI } from '../../services/api';
 import { useLang } from '../../context/LanguageContext';
-import PageHeroWave from '../../components/decor/PageHeroWave';
 import './Profile.css';
 
 export default function Profile() {
@@ -64,26 +63,19 @@ export default function Profile() {
         }
     };
 
-    if (loading) return <div className="dash-loading">{t('common.loading')}</div>;
+    if (loading) return <div className="pt-loading">{t('common.loading')}</div>;
 
     return (
         <div className="profile-page">
-            <div className="page-hero-band">
-                <PageHeroWave />
-                <div className="page-hero-inner">
-                    <div className="page-header">
-                        <div>
-                            <h1 className="page-title">{t('profile.title')}</h1>
-                            <p className="page-subtitle">{t('profile.subtitle')}</p>
-                        </div>
-                    </div>
-                </div>
+            <div className="pt-page-header">
+                <h1 className="pt-title">{t('profile.title')}</h1>
+                <p className="pt-subtitle">{t('profile.subtitle')}</p>
             </div>
 
             <div className="profile-grid">
 
                 {/* ── Identity card ────────────────────────────────────────────── */}
-                <div className="profile-card profile-card--identity">
+                <div className="pt-card profile-card profile-card--identity">
                     <div className="profile-avatar">{initial}</div>
                     <div className="profile-name">{fullName || '—'}</div>
                     <div className="profile-email">{email || '—'}</div>
@@ -91,46 +83,46 @@ export default function Profile() {
                 </div>
 
                 {/* ── Change password card ─────────────────────────────────────── */}
-                <div className="profile-card">
+                <div className="pt-card profile-card">
                     <div className="profile-card-header">
-                        <h2 className="profile-card-title">{t('profile.changePassword')}</h2>
+                        <h2 className="pt-h2">{t('profile.changePassword')}</h2>
                         <p className="profile-card-desc">{t('settings.securityDesc')}</p>
                     </div>
                     <div className="profile-form">
-                        <div className="form-field">
-                            <label className="form-label">{t('profile.currentPw')}</label>
+                        <div className="pt-field">
+                            <label className="pt-label">{t('profile.currentPw')}</label>
                             <div className="pw-input-wrap">
-                                <input className="form-input" type={showCurr ? 'text' : 'password'}
+                                <input className="pt-input" type={showCurr ? 'text' : 'password'}
                                        value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="••••••••" />
                                 <button className="pw-eye" onClick={() => setShowCurr(v => !v)} type="button">
                                     {showCurr ? <EyeOff size={16} strokeWidth={1.8} /> : <Eye size={16} strokeWidth={1.8} />}
                                 </button>
                             </div>
                         </div>
-                        <div className="form-field">
-                            <label className="form-label">{t('profile.newPw')}</label>
+                        <div className="pt-field">
+                            <label className="pt-label">{t('profile.newPw')}</label>
                             <div className="pw-input-wrap">
-                                <input className="form-input" type={showNew ? 'text' : 'password'}
+                                <input className="pt-input" type={showNew ? 'text' : 'password'}
                                        value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="••••••••" />
                                 <button className="pw-eye" onClick={() => setShowNew(v => !v)} type="button">
                                     {showNew ? <EyeOff size={16} strokeWidth={1.8} /> : <Eye size={16} strokeWidth={1.8} />}
                                 </button>
                             </div>
                         </div>
-                        <div className="form-field">
-                            <label className="form-label">{t('profile.confirmPw')}</label>
+                        <div className="pt-field">
+                            <label className="pt-label">{t('profile.confirmPw')}</label>
                             <div className="pw-input-wrap">
-                                <input className="form-input" type={showConf ? 'text' : 'password'}
+                                <input className="pt-input" type={showConf ? 'text' : 'password'}
                                        value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="••••••••" />
                                 <button className="pw-eye" onClick={() => setShowConf(v => !v)} type="button">
                                     {showConf ? <EyeOff size={16} strokeWidth={1.8} /> : <Eye size={16} strokeWidth={1.8} />}
                                 </button>
                             </div>
                         </div>
-                        {pwError && <div className="pw-error">{pwError}</div>}
-                        {pwSaved && <div className="pw-success"><Check size={15} strokeWidth={2.5} /> {t('profile.pwSuccess')}</div>}
+                        {pwError && <div className="pt-alert pt-alert--error">{pwError}</div>}
+                        {pwSaved && <div className="pt-alert pt-alert--success pw-success"><Check size={15} strokeWidth={2.5} /> {t('profile.pwSuccess')}</div>}
                         <div>
-                            <button className="btn btn--primary" onClick={handlePasswordChange} disabled={pwLoading}>
+                            <button className="pt-btn" onClick={handlePasswordChange} disabled={pwLoading}>
                                 <Lock size={15} strokeWidth={1.8} /> {pwLoading ? 'Saving…' : t('profile.changePwBtn')}
                             </button>
                         </div>

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
-import 'hero_wave.dart';
 
-/// Full-bleed wavy header for secondary tabs/screens (History, Profile,
-/// Find a dermatologist) - the same "mini hero" motif as the web app's
-/// page-hero-band (skin_web page CSS files) and the mobile Home screen's own
-/// hero. Deliberately not used on the Scan flow, which has its own step UI.
+/// Flat page header for secondary tabs/screens (History, Profile, Find a
+/// dermatologist): serif title + muted subtitle on the page background, no
+/// gradient or decoration. Name kept from the earlier hero-band version so
+/// existing call sites stay unchanged.
 class PageHeroHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final String? subtitle;
@@ -21,7 +20,7 @@ class PageHeroHeader extends StatelessWidget implements PreferredSizeWidget {
     this.actions,
   });
 
-  static const double height = 196;
+  static const double height = 116;
 
   @override
   Size get preferredSize => const Size.fromHeight(height);
@@ -29,64 +28,48 @@ class PageHeroHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    return ClipPath(
-      clipper: const HeroWaveClipper(),
-      child: Container(
-        width: double.infinity,
-        height: height,
-        padding: const EdgeInsets.fromLTRB(12, 18, 20, 46),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [c.primary, c.primaryDeep],
-          ),
-        ),
-        child: Stack(
-          children: [
-            const Positioned.fill(
-              child: CustomPaint(painter: HeroDotsPainter()),
-            ),
-            SafeArea(
-              bottom: false,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (showBackButton)
-                    IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                    )
-                  else
-                    const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        if (subtitle != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            subtitle!,
-                            style: const TextStyle(color: Colors.white70, fontSize: 13),
-                          ),
-                        ],
-                      ],
+    return Container(
+      width: double.infinity,
+      height: height,
+      color: c.background,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(showBackButton ? 4 : AppSpace.xl, AppSpace.md, AppSpace.xl, 0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (showBackButton)
+                IconButton(
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  icon: Icon(Icons.arrow_back_rounded, color: c.text),
+                ),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTheme.display(c, size: 28),
                     ),
-                  ),
-                  if (actions != null) ...actions!,
-                ],
+                    if (subtitle != null) ...[
+                      const SizedBox(height: AppSpace.xs),
+                      Text(
+                        subtitle!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: c.textMuted, fontSize: 13.5),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              if (actions != null) ...actions!,
+            ],
+          ),
         ),
       ),
     );

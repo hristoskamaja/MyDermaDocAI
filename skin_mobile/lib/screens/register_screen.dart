@@ -65,11 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 Text(
                   context.tr('auth.registerTitle'),
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: c.text,
-                  ),
+                  style: AppTheme.display(c, size: 30),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -140,12 +136,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed: _loading ? null : _submit,
                     child: _loading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.4,
-                              color: Colors.white,
+                              color: context.colors.onPrimary,
                             ),
                           )
                         : Text(context.tr('auth.createAccount')),

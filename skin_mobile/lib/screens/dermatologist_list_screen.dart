@@ -6,6 +6,7 @@ import '../l10n/locale_context.dart';
 import '../models/dermatologist.dart';
 import '../services/dermatologist_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/locale_reload.dart';
 import '../widgets/page_hero_header.dart';
 
 /// Read-only list of dermatologists. Rows can come from the admin typing
@@ -29,7 +30,7 @@ class DermatologistListScreen extends StatefulWidget {
       _DermatologistListScreenState();
 }
 
-class _DermatologistListScreenState extends State<DermatologistListScreen> {
+class _DermatologistListScreenState extends State<DermatologistListScreen> with LocaleReloadMixin {
   final _dermatologistService = DermatologistService();
   late Future<List<Dermatologist>> _future;
   bool _usingLocation = false;
@@ -48,6 +49,11 @@ class _DermatologistListScreenState extends State<DermatologistListScreen> {
   @override
   void initState() {
     super.initState();
+    _future = _load();
+  }
+
+  @override
+  void reloadForLocale() {
     _future = _load();
   }
 
@@ -166,7 +172,7 @@ class _DermatologistListScreenState extends State<DermatologistListScreen> {
               child: FutureBuilder<List<Dermatologist>>(
                 future: _future,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {

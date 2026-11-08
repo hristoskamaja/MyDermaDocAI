@@ -12,8 +12,15 @@ class AppStrings {
     'nav': {
       'home': 'Home',
       'scan': 'Scan',
+      'track': 'Track',
       'history': 'History',
       'profile': 'Profile',
+    },
+    'track': {
+      'title': 'Track your skin',
+      'subtitle': 'Daily check-ins, routine and trends are coming soon.',
+      'soonTitle': 'Coming soon',
+      'soonText': 'We are building the tracker. For now you can scan a spot and review your history.',
     },
     'severity': {
       'low': 'Low',
@@ -164,8 +171,15 @@ class AppStrings {
     'nav': {
       'home': 'Почетна',
       'scan': 'Скенирај',
+      'track': 'Следење',
       'history': 'Историја',
       'profile': 'Профил',
+    },
+    'track': {
+      'title': 'Следи ја твојата кожа',
+      'subtitle': 'Дневни проверки, рутина и трендови наскоро.',
+      'soonTitle': 'Наскоро',
+      'soonText': 'Го градиме следачот. Засега можеш да скенираш дамка и да ја прегледаш историјата.',
     },
     'severity': {
       'low': 'Ниска',

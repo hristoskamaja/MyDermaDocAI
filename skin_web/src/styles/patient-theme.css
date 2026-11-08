@@ -1,0 +1,168 @@
+/* ── Patient design system ─────────────────────────────────────────────────────
+   Scoped to .theme-patient (PatientLayout, Login, Register, password reset) so
+   the admin panel keeps its indigo/teal look. Variable names match index.css,
+   so patient pages also render sanely when an admin opens them.
+   Light: cream + deep-teal accent. Dark: deep teal-black + mint accent.
+   Mobile counterpart: skin_mobile/lib/theme/app_theme.dart (AppColors). ──── */
+
+:root {
+    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --radius-pill:  999px;
+    --on-primary:   #ffffff;
+    --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+    --space-5: 24px; --space-6: 32px; --space-7: 48px;
+}
+
+.theme-patient {
+    --bg:            #fcf5ec;
+    --surface:       #fffdf8;
+    --surface2:      #f3ebdd;
+    --border:        #e8dece;
+
+    --text:          #0e2a2f;
+    --text-muted:    #5e6f70;
+    --text-light:    #8a9899;
+
+    /* Single accent */
+    --primary:       #0b3b42;
+    --primary-soft:  #dcefe6;
+    --on-primary:    #ffffff;
+    --teal:          #0b3b42;
+
+    --low:           #2f7d5b;  --low-bg:  #e0f0e7;
+    --med:           #a86a12;  --med-bg:  #f8ebd2;
+    --high:          #b4402f;  --high-bg: #f7dfd9;
+    --info:          #0b3b42;  --info-bg: #dcefe6;
+    --other:         #5e6f70;  --other-bg:#f3ebdd;
+
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 24px;
+
+    --shadow-sm: 0 1px 2px rgba(14,42,47,0.05);
+    --shadow-md: 0 6px 20px rgba(14,42,47,0.08);
+    --topbar-h:  72px;
+}
+
+[data-theme="dark"] .theme-patient {
+    --bg:            #07161a;
+    --surface:       #0d2228;
+    --surface2:      #12303a;
+    --border:        #1b3a44;
+
+    --text:          #eaf3f1;
+    --text-muted:    #9db5b3;
+    --text-light:    #6f8a8a;
+
+    --primary:       #4fb8a5;
+    --primary-soft:  #14403f;
+    --on-primary:    #04201f;
+    --teal:          #4fb8a5;
+
+    --low:           #5fcf9f;  --low-bg:  #123a2c;
+    --med:           #e3a94f;  --med-bg:  #3a2c12;
+    --high:          #ef8573;  --high-bg: #3d1c16;
+    --info:          #4fb8a5;  --info-bg: #14403f;
+    --other:         #9db5b3;  --other-bg:#12303a;
+
+    --shadow-sm: none;
+    --shadow-md: 0 6px 20px rgba(0,0,0,0.35);
+}
+
+/* ── Shared building blocks (flat, one accent, generous whitespace) ───────────
+   Unscoped (pt- prefix is unique) so an admin viewing a patient page still gets
+   layout, just with the admin colors from index.css. ───────────────────────── */
+.pt-eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--primary);
+}
+.pt-title {
+    font-family: var(--font-display);
+    font-size: clamp(30px, 4vw, 42px); font-weight: 600;
+    letter-spacing: -0.01em; line-height: 1.15; color: var(--text);
+}
+.pt-subtitle { font-size: 15px; color: var(--text-muted); margin-top: var(--space-2); }
+.pt-page-header { margin-bottom: var(--space-5); }
+.pt-h2 {
+    font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--text);
+}
+
+.pt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-sm);
+}
+
+.pt-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 22px; border-radius: var(--radius-pill);
+    font-size: 14px; font-weight: 700; border: 1px solid transparent;
+    background: var(--primary); color: var(--on-primary);
+    cursor: pointer; white-space: nowrap;
+    transition: opacity 0.15s, transform 0.1s, background 0.15s;
+}
+.pt-btn:hover:not(:disabled) { opacity: 0.9; }
+.pt-btn:active:not(:disabled) { transform: scale(0.98); }
+.pt-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pt-btn--ghost {
+    background: transparent; color: var(--text); border-color: var(--border);
+}
+.pt-btn--ghost:hover:not(:disabled) { background: var(--surface2); opacity: 1; }
+.pt-btn--block { width: 100%; }
+
+.pt-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: var(--radius-pill);
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 13px; font-weight: 600; color: var(--text);
+}
+.pt-icon-chip {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--primary-soft); color: var(--primary);
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+.pt-input {
+    width: 100%; padding: 12px 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); font-size: 14.5px; color: var(--text);
+    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pt-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.pt-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.pt-field { display: flex; flex-direction: column; gap: 6px; }
+
+.pt-alert {
+    border-radius: var(--radius-md); padding: 12px 14px; font-size: 13.5px; line-height: 1.5;
+    border: 1px solid transparent;
+}
+.pt-alert--error   { background: var(--high-bg); color: var(--high); border-color: var(--high); }
+.pt-alert--warn    { background: var(--med-bg);  color: var(--med);  border-color: var(--med); }
+.pt-alert--success { background: var(--low-bg);  color: var(--low);  border-color: var(--low); }
+.pt-note {
+    display: flex; align-items: flex-start; gap: 10px;
+    border: 1px dashed var(--border); border-radius: var(--radius-md);
+    padding: 12px 16px; font-size: 12.5px; line-height: 1.5; color: var(--text-muted);
+}
+.pt-note svg { flex-shrink: 0; margin-top: 2px; color: var(--primary); }
+
+.pt-loading { padding: 64px 20px; text-align: center; color: var(--text-muted); font-size: 14px; }
+.pt-link { color: var(--primary); font-weight: 700; }
+.pt-link:hover { text-decoration: underline; }
+
+/* Severity pill */
+.theme-patient .sev-pill {
+    display: inline-flex; align-items: center; gap: 6px; width: fit-content;
+    padding: 3px 10px; border-radius: var(--radius-pill);
+    font-size: 11.5px; font-weight: 700;
+}
+.theme-patient .sev-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.theme-patient .sev-pill--low    { background: var(--low-bg);  color: var(--low); }
+.theme-patient .sev-pill--medium { background: var(--med-bg);  color: var(--med); }
+.theme-patient .sev-pill--high   { background: var(--high-bg); color: var(--high); }
+
+/* Refetch indicator: old content stays visible, just dims slightly */
+.pt-refreshing { opacity: 0.6; transition: opacity 0.15s; }

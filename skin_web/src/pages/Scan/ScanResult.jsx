@@ -3,17 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ImageIcon, Info, ArrowUp, RefreshCw, History as HistoryIcon, Contact, Download } from 'lucide-react';
 import { useLang } from '../../context/LanguageContext';
 import { analysesAPI, conditionsAPI } from '../../services/api';
-import PageHeroWave from '../../components/decor/PageHeroWave';
 import './ScanResult.css';
 
-// ── Severity badge (mirrors the admin Conditions page visual language) ─────
-// `light` renders a translucent-white pill for use on the dark hero band,
-// instead of the color-coded pill used everywhere else in the app.
-function SeverityBadge({ severity, t, light }) {
-    if (light) {
-        const labels = { LOW: t('conditions.low'), MEDIUM: t('conditions.medium'), HIGH: t('conditions.high') };
-        return <span className="sev-pill sev-pill--onDark">{labels[severity] || severity}</span>;
-    }
+// ── Severity badge ───────────────────────────────────────────────────────────
+function SeverityBadge({ severity, t }) {
     const cls = { LOW: 'sev-pill--low', MEDIUM: 'sev-pill--medium', HIGH: 'sev-pill--high' };
     const labels = { LOW: t('conditions.low'), MEDIUM: t('conditions.medium'), HIGH: t('conditions.high') };
     return <span className={`sev-pill ${cls[severity] || ''}`}>{labels[severity] || severity}</span>;
@@ -131,7 +124,7 @@ function AnalysisChat({ analysisId, t }) {
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function ScanResult() {
     const { id } = useParams();
-    const { t } = useLang();
+    const { t, lang } = useLang();
     const navigate = useNavigate();
 
     const [analysis, setAnalysis] = useState(null);
@@ -141,10 +134,13 @@ export default function ScanResult() {
     const [downloadingPdf, setDownloadingPdf] = useState(false);
     const [pdfError, setPdfError] = useState('');
 
+    // Refetches when the analysis id OR the UI language changes: the condition
+    // text and recommendations come back localized. On a language change the
+    // current result stays on screen (no spinner) until the new data arrives.
+    // The chat history (AnalysisChat) is intentionally not language-dependent.
     useEffect(() => {
         let cancelled = false;
         const load = async () => {
-            setLoading(true);
             setError('');
             try {
                 const res = await analysesAPI.getById(id);
@@ -170,7 +166,7 @@ export default function ScanResult() {
         };
         load();
         return () => { cancelled = true; };
-    }, [id]);
+    }, [id, lang]);
 
     // Downloaded as a blob (not a plain <a href>) because /analyses/:id/pdf/
     // is a protected endpoint - the request needs the same Authorization
@@ -199,13 +195,13 @@ export default function ScanResult() {
         }
     };
 
-    if (loading) return <div className="scan-result-loading">{t('common.loading')}</div>;
+    if (loading) return <div className="pt-loading">{t('common.loading')}</div>;
 
     if (error || !analysis) {
         return (
             <div className="scan-result-error">
                 <p>{error || 'Analysis not found.'}</p>
-                <Link to="/scan" className="btn btn--primary">{t('result.scanAgain')}</Link>
+                <Link to="/scan" className="pt-btn">{t('result.scanAgain')}</Link>
             </div>
         );
     }
@@ -220,19 +216,15 @@ export default function ScanResult() {
 
     return (
         <div className="scan-result-page">
-            <div className="page-hero-band">
-                <PageHeroWave />
-            </div>
-
             <div className="result-title-block">
                 <div className="result-title-row">
                     <SeverityBadge severity={condition?.severity} t={t} />
                     {scanDate && <span className="result-date">{scanDate}</span>}
                 </div>
-                <h1 className="result-title">{condition?.name}</h1>
+                <h1 className="pt-title">{condition?.name}</h1>
             </div>
 
-            <div className="result-card">
+            <div className="pt-card result-card">
                 <div className="result-image-wrap">
                     {analysis.image
                         ? <img src={analysis.image} alt={condition?.name} className="result-image" />
@@ -250,7 +242,7 @@ export default function ScanResult() {
                 </div>
 
                 {analysis.is_low_confidence && (
-                    <div className="result-low-conf-banner">{t('result.lowConfidenceWarn')}</div>
+                    <div className="pt-alert pt-alert--warn">{t('result.lowConfidenceWarn')}</div>
                 )}
 
                 {condition?.description && (
@@ -276,7 +268,7 @@ export default function ScanResult() {
             </div>
 
             {groupedRecs.length > 0 && (
-                <div className="result-card result-recs">
+                <div className="pt-card result-card result-recs">
                     {groupedRecs.map(g => (
                         <div key={g.type} className={`rec-section ${g.cls}`}>
                             <div className="rec-section-title">{t(g.labelKey)}</div>
@@ -315,26 +307,26 @@ export default function ScanResult() {
                 </div>
             )}
 
-            <div className="result-disclaimer">
+            <div className="pt-note">
                 <Info size={18} strokeWidth={1.8} />
                 <span>{t('disclaimer.resultText')}</span>
             </div>
 
             <div className="result-actions">
-                <button className="btn btn--primary" onClick={() => navigate('/scan')}>
+                <button className="pt-btn" onClick={() => navigate('/scan')}>
                     <RefreshCw size={15} strokeWidth={1.8} /> {t('result.scanAgain')}
                 </button>
-                <button className="btn btn--secondary" onClick={handleDownloadPdf} disabled={downloadingPdf}>
+                <button className="pt-btn pt-btn--ghost" onClick={handleDownloadPdf} disabled={downloadingPdf}>
                     <Download size={15} strokeWidth={1.8} />
                     {downloadingPdf ? t('result.downloadingPdf') : t('result.downloadPdf')}
                 </button>
-                <button className="btn btn--secondary" onClick={() => navigate('/history')}>
+                <button className="pt-btn pt-btn--ghost" onClick={() => navigate('/history')}>
                     <HistoryIcon size={15} strokeWidth={1.8} /> {t('result.backToHistory')}
                 </button>
             </div>
-            {pdfError && <div className="result-low-conf-banner">{pdfError}</div>}
+            {pdfError && <div className="pt-alert pt-alert--warn">{pdfError}</div>}
 
-            <div className="result-card">
+            <div className="pt-card result-card">
                 <AnalysisChat analysisId={analysis.id} t={t} />
             </div>
         </div>

@@ -1,0 +1,23 @@
+/* Layout for the logged-out pages (Login / Register / password reset).
+   Colors, inputs and buttons come from styles/patient-theme.css. */
+.pt-auth-page {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: var(--space-5);
+    padding: var(--space-7) var(--space-4) var(--space-6);
+    position: relative;
+}
+.pt-auth-top { position: absolute; top: var(--space-4); right: var(--space-4); }
+.pt-auth-brand {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-display); font-size: 24px; font-weight: 600; color: var(--text);
+}
+.pt-auth-brand-ai { color: var(--primary); }
+.pt-auth-card { width: 100%; max-width: 420px; padding: var(--space-6); }
+.pt-auth-card h1 { font-family: var(--font-display); font-size: 28px; font-weight: 600; color: var(--text); }
+.pt-auth-sub { font-size: 14px; color: var(--text-muted); margin: 6px 0 var(--space-5); }
+.pt-auth-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.pt-auth-foot { text-align: center; font-size: 13.5px; color: var(--text-muted); }
+.pt-auth-optional { font-weight: 400; color: var(--text-muted); }

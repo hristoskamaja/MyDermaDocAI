@@ -27,6 +27,8 @@ const TRANSLATIONS = {
             dermatologists:  'Dermatologists',
             findDermatologist: 'Find a Dermatologist',
             doctorsTab:      'Doctors',
+            track:           'Track',
+            language:        'Language',
         },
 
         // ── Common ────────────────────────────────────────────────────────────────
@@ -180,6 +182,7 @@ const TRANSLATIONS = {
         // ── Find a Dermatologist (patient-facing, read-only) ─────────────────────
         findDermatologist: {
             title:             'Find a Dermatologist',
+            eyebrow:           'Care near you',
             subtitle:          'Dermatologists added by our team. Reach out directly to book an appointment.',
             empty:             "Your admin hasn't added any dermatologists yet.",
             emptySub:          'Check back later — this list is maintained by hand, not generated automatically.',
@@ -285,6 +288,8 @@ const TRANSLATIONS = {
             emailLabel:        'Email address',
             passwordLabel:     'Password',
             forgotPassword:    'Forgot password?',
+            heading:           'Sign in',
+            patientSubtitle:   'Welcome back. Sign in to continue.',
             signInBtn:         'Sign In',
             signingIn:         'Signing in…',
             errorEmpty:        'Please fill in all fields.',
@@ -298,6 +303,47 @@ const TRANSLATIONS = {
             headlineSub:       'Manage conditions, review analyses, and monitor model performance across your platform.',
             noAccount:         "Don't have an account?",
             signUpLink:        'Sign up',
+        },
+
+        // ── Track (placeholder until the tracker ships) ──────────────────────────
+        track: {
+            eyebrow:           'Skin tracker',
+            title:             'Track your skin',
+            subtitle:          'Daily check-ins, routine and trends are coming soon.',
+            soonTitle:         'Coming soon',
+            soonText:          'We are building the tracker. For now you can scan a spot and review your history.',
+        },
+
+        // ── Forgot / reset password ──────────────────────────────────────────────
+        forgot: {
+            title:             'Forgot your password?',
+            subtitle:          "Enter your email and we'll send you a link to reset it.",
+            emailLabel:        'Email address',
+            sendBtn:           'Send reset link',
+            sending:           'Sending…',
+            sentTitle:         'Check your inbox',
+            sentText:          'If an account exists for that email, a reset link is on its way. The link expires in 1 hour.',
+            errorEmpty:        'Please enter your email address.',
+            errorGeneric:      'Could not send the reset link. Please try again.',
+            backToLogin:       'Back to sign in',
+        },
+        reset: {
+            title:             'Set a new password',
+            subtitle:          'Choose a new password for your account.',
+            newPassword:       'New password',
+            confirmPassword:   'Confirm new password',
+            submitBtn:         'Reset password',
+            submitting:        'Saving…',
+            errorEmpty:        'Please fill in both password fields.',
+            errorLength:       'Password must be at least 6 characters.',
+            errorMatch:        'Passwords do not match.',
+            errorInvalidLink:  'This reset link is invalid or has expired. Please request a new one.',
+            errorGeneric:      'Could not reset your password. Please try again.',
+            missingLink:       'This reset link is incomplete. Please request a new one.',
+            requestNew:        'Request a new link',
+            successTitle:      'Password updated',
+            successText:       'Your password was changed. You can now sign in with it.',
+            goToLogin:         'Go to sign in',
         },
 
         // ── Register ──────────────────────────────────────────────────────────────
@@ -328,6 +374,9 @@ const TRANSLATIONS = {
             heroSub:           'Snap a photo of a skin concern and get an instant AI-powered assessment with care recommendations.',
             scanCta:           'Scan your skin',
             scanCtaSub:        'Get an instant AI-powered check',
+            startScan:         'Start a scan',
+            lastScan:          'Last scan',
+            aiSkinCheck:       'AI skin check',
             whyTitle:          'What makes DermaScanAI different',
             feature1Title:     'Instant AI analysis',
             feature1Sub:       'Get an AI-powered assessment in seconds from a single photo.',
@@ -348,6 +397,7 @@ const TRANSLATIONS = {
         scan: {
             title:             'Scan your skin',
             subtitle:          'Take or upload a clear photo of the area you want checked.',
+            eyebrow:           'New scan',
             dropText:          'Drag & drop a photo here, or click to upload',
             dropSub:           'PNG, JPG, WEBP up to 10MB',
             changePhoto:       'Choose a different photo',
@@ -430,6 +480,8 @@ const TRANSLATIONS = {
             dermatologists:  'Дерматолози',
             findDermatologist: 'Најди дерматолог',
             doctorsTab:      'Доктори',
+            track:           'Следење',
+            language:        'Јазик',
         },
 
         // ── Common ────────────────────────────────────────────────────────────────
@@ -583,6 +635,7 @@ const TRANSLATIONS = {
         // ── Find a Dermatologist (patient-facing, read-only) ─────────────────────
         findDermatologist: {
             title:             'Најди дерматолог',
+            eyebrow:           'Грижа во близина',
             subtitle:          'Дерматолози додадени од нашиот тим. Контактирајте директно за да закажете преглед.',
             empty:             'Вашиот администратор сè уште нема додадено дерматолози.',
             emptySub:          'Проверете повторно подоцна — оваа листа се одржува рачно, не се генерира автоматски.',
@@ -688,6 +741,8 @@ const TRANSLATIONS = {
             emailLabel:        'Е-пошта адреса',
             passwordLabel:     'Лозинка',
             forgotPassword:    'Заборавена лозинка?',
+            heading:           'Најава',
+            patientSubtitle:   'Добре дојде назад. Најави се за да продолжиш.',
             signInBtn:         'Најави се',
             signingIn:         'Најавување…',
             errorEmpty:        'Ве молиме пополнете ги сите полиња.',
@@ -701,6 +756,47 @@ const TRANSLATIONS = {
             headlineSub:       'Управувајте со состојби, прегледувајте анализи и следете ги перформансите на моделот низ вашата платформа.',
             noAccount:         'Немате сметка?',
             signUpLink:        'Регистрирај се',
+        },
+
+        // ── Track (placeholder until the tracker ships) ──────────────────────────
+        track: {
+            eyebrow:           'Следење на кожата',
+            title:             'Следи ја твојата кожа',
+            subtitle:          'Дневни проверки, рутина и трендови наскоро.',
+            soonTitle:         'Наскоро',
+            soonText:          'Го градиме следачот. Засега можеш да скенираш дамка и да ја прегледаш историјата.',
+        },
+
+        // ── Forgot / reset password ──────────────────────────────────────────────
+        forgot: {
+            title:             'Ја заборави лозинката?',
+            subtitle:          'Внеси ја е-поштата и ќе ти испратиме линк за ресетирање.',
+            emailLabel:        'Е-пошта адреса',
+            sendBtn:           'Испрати линк',
+            sending:           'Се испраќа…',
+            sentTitle:         'Провери го сандачето',
+            sentText:          'Ако постои сметка за таа е-пошта, линкот за ресетирање е на пат. Линкот важи 1 час.',
+            errorEmpty:        'Внеси е-пошта адреса.',
+            errorGeneric:      'Линкот не може да се испрати. Обиди се повторно.',
+            backToLogin:       'Назад кон најава',
+        },
+        reset: {
+            title:             'Постави нова лозинка',
+            subtitle:          'Избери нова лозинка за твојата сметка.',
+            newPassword:       'Нова лозинка',
+            confirmPassword:   'Потврди ја новата лозинка',
+            submitBtn:         'Ресетирај лозинка',
+            submitting:        'Се зачувува…',
+            errorEmpty:        'Пополни ги двете полиња за лозинка.',
+            errorLength:       'Лозинката мора да има најмалку 6 карактери.',
+            errorMatch:        'Лозинките не се совпаѓаат.',
+            errorInvalidLink:  'Линкот е невалиден или истечен. Побарај нов.',
+            errorGeneric:      'Лозинката не може да се ресетира. Обиди се повторно.',
+            missingLink:       'Линкот за ресетирање е нецелосен. Побарај нов.',
+            requestNew:        'Побарај нов линк',
+            successTitle:      'Лозинката е променета',
+            successText:       'Лозинката е сменета. Сега можеш да се најавиш со неа.',
+            goToLogin:         'Оди на најава',
         },
 
         // ── Register ──────────────────────────────────────────────────────────────
@@ -731,6 +827,9 @@ const TRANSLATIONS = {
             heroSub:           'Сликај ја проблематичната зона и добиј моментална AI проценка со препораки за нега.',
             scanCta:           'Скенирај ја кожата',
             scanCtaSub:        'Добиј моментална AI проверка',
+            startScan:         'Започни скенирање',
+            lastScan:          'Последно скенирање',
+            aiSkinCheck:       'AI проверка на кожата',
             whyTitle:          'Што го издвојува DermaScanAI',
             feature1Title:     'Моментална AI анализа',
             feature1Sub:       'Добиј AI проценка за неколку секунди од само една слика.',
@@ -751,6 +850,7 @@ const TRANSLATIONS = {
         scan: {
             title:             'Скенирај ја твојата кожа',
             subtitle:          'Сликај или прикачи јасна фотографија на делот кој сакаш да го провериш.',
+            eyebrow:           'Ново скенирање',
             dropText:          'Повлечи и пушти слика тука, или кликни за прикачување',
             dropSub:           'PNG, JPG, WEBP до 10MB',
             changePhoto:       'Избери друга слика',
