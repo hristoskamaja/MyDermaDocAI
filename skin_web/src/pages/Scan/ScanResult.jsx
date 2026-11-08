@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ImageIcon, Info, ArrowUp, RefreshCw, History as HistoryIcon, Contact, Download } from 'lucide-react';
+import { ImageIcon, Info, ArrowUp, RefreshCw, History as HistoryIcon, Contact, Download, Sprout } from 'lucide-react';
 import { useLang } from '../../context/LanguageContext';
-import { analysesAPI, conditionsAPI } from '../../services/api';
+import { analysesAPI, conditionsAPI, trackingAPI } from '../../services/api';
+import { SCAN_AREAS, apiErrorText } from '../Track/trackUtils';
 import './ScanResult.css';
 
 // ── Severity badge ───────────────────────────────────────────────────────────
@@ -17,6 +18,58 @@ const REC_GROUPS = [
     { type: 'SELF_CARE',       labelKey: 'result.selfCare',    cls: 'rec-section--self'     },
     { type: 'LIFESTYLE',       labelKey: 'result.lifestyle',   cls: 'rec-section--lifestyle' },
 ];
+
+// ── Save to tracking ─────────────────────────────────────────────────────────
+// Links this scan to the user's tracker timeline, optionally to a body area so
+// the same spot can be compared over time.
+function SaveToTracking({ analysisId, t }) {
+    const [area, setArea] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSave = async () => {
+        setSaving(true);
+        setError('');
+        try {
+            await trackingAPI.saveScan(analysisId, area ? { body_area: area } : {});
+            setSaved(true);
+        } catch (err) {
+            setError(apiErrorText(err, t('track.saveScan.error')));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (saved) {
+        return (
+            <div className="pt-alert pt-alert--success save-tracking-done">
+                <span>{t('track.saveScan.saved')}</span>
+                <Link to="/track/timeline" className="pt-link">{t('track.saveScan.viewTimeline')}</Link>
+            </div>
+        );
+    }
+
+    return (
+        <div className="pt-card save-tracking">
+            <label className="pt-field save-tracking-field">
+                <span className="pt-label">{t('track.saveScan.area')}</span>
+                <select className="pt-input" value={area} onChange={(e) => setArea(e.target.value)}>
+                    <option value="">{t('track.saveScan.areaNone')}</option>
+                    {SCAN_AREAS.map((key) => (
+                        <option key={key} value={key}>
+                            {t(`track.areas.${key}`) !== `track.areas.${key}` ? t(`track.areas.${key}`) : t(`track.scanAreas.${key}`)}
+                        </option>
+                    ))}
+                </select>
+            </label>
+            <button type="button" className="pt-btn" onClick={handleSave} disabled={saving}>
+                <Sprout size={15} strokeWidth={1.8} /> {saving ? t('track.saveScan.saving') : t('track.saveScan.button')}
+            </button>
+            {error && <div className="pt-alert pt-alert--error">{error}</div>}
+        </div>
+    );
+}
 
 // ── Chat Q&A section ─────────────────────────────────────────────────────────
 function AnalysisChat({ analysisId, t }) {
@@ -325,6 +378,8 @@ export default function ScanResult() {
                 </button>
             </div>
             {pdfError && <div className="pt-alert pt-alert--warn">{pdfError}</div>}
+
+            <SaveToTracking analysisId={analysis.id} t={t} />
 
             <div className="pt-card result-card">
                 <AnalysisChat analysisId={analysis.id} t={t} />

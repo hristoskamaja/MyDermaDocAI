@@ -184,6 +184,38 @@ export const analysesAPI = {
     downloadPdf:  (id)   => api.get(`/analyses/${id}/pdf/`, { responseType: 'blob' }),
 };
 
+// ── Tracking (patient skin tracker; every endpoint returns own data only) ─────
+export const trackingAPI = {
+    // Daily logs. `data` is JSON, or FormData when a photo is attached.
+    getLogs:     (params)       => api.get('/tracking/logs/', { params }),
+    getLog:      (day)          => api.get(`/tracking/logs/${day}/`),
+    saveLog:     (day, data)    => api.put(`/tracking/logs/${day}/`, data,
+        data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
+    deleteLog:   (day)          => api.delete(`/tracking/logs/${day}/`),
+    // Photos need the Bearer token, so they are fetched as blobs (never <img src=url>).
+    getPhoto:    (day)          => api.get(`/tracking/logs/${day}/photo/`, { responseType: 'blob' }),
+
+    getProducts:   ()           => api.get('/tracking/products/'),
+    createProduct: (data)       => api.post('/tracking/products/', data),
+    updateProduct: (id, data)   => api.patch(`/tracking/products/${id}/`, data),
+    deleteProduct: (id)         => api.delete(`/tracking/products/${id}/`),
+
+    getToday:      ()           => api.get('/tracking/today/'),
+    getWeek:       ()           => api.get('/tracking/week/'),
+    getTimeline:   (params)     => api.get('/tracking/timeline/', { params }),
+    getInsights:   ()           => api.get('/tracking/insights/'),
+    getCorrelation:(params)     => api.get('/tracking/correlation/', { params }),
+    getWeeklyReport: ()         => api.get('/tracking/weekly-report/'),
+    ask:           (data)       => api.post('/tracking/ask/', data),
+    getSuggestions:()           => api.get('/tracking/ask/suggestions/'),
+
+    getReminders:    ()         => api.get('/tracking/reminders/'),
+    updateReminders: (data)     => api.patch('/tracking/reminders/', data),
+
+    saveScan:      (analysisId, data) => api.post(`/tracking/scans/${analysisId}/save/`, data),
+    deleteAll:     ()           => api.delete('/tracking/data/', { params: { confirm: 'true' } }),
+};
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 export const dashboardAPI = {
     getOverview:              () => api.get('/dashboard/overview/'),

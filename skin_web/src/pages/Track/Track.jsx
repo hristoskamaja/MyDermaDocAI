@@ -1,23 +1,42 @@
-import { Link } from 'react-router-dom';
-import { Sprout } from 'lucide-react';
+import { NavLink, Outlet } from 'react-router-dom';
 import { useLang } from '../../context/LanguageContext';
+import './Track.css';
 
-// Placeholder until the skin tracker (check-ins, routine, timeline) ships.
+const TABS = [
+    { to: '/track',           key: 'hub',       end: true },
+    { to: '/track/check-in',  key: 'checkin' },
+    { to: '/track/timeline',  key: 'timeline' },
+    { to: '/track/insights',  key: 'insights' },
+    { to: '/track/routine',   key: 'routine' },
+    { to: '/track/weekly',    key: 'weekly' },
+    { to: '/track/reminders', key: 'reminders' },
+];
+
+// Shell for the tracker: header, pill sub-tabs, and the active sub-page.
 export default function Track() {
     const { t } = useLang();
     return (
-        <div>
+        <div className="tr-page">
             <div className="pt-page-header">
                 <p className="pt-eyebrow">{t('track.eyebrow')}</p>
                 <h1 className="pt-title">{t('track.title')}</h1>
                 <p className="pt-subtitle">{t('track.subtitle')}</p>
             </div>
-            <div className="pt-card" style={{ maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
-                <span className="pt-icon-chip"><Sprout size={20} strokeWidth={1.8} /></span>
-                <h2 className="pt-h2">{t('track.soonTitle')}</h2>
-                <p className="pt-subtitle" style={{ marginTop: 0 }}>{t('track.soonText')}</p>
-                <Link to="/scan" className="pt-btn">{t('nav.scan')}</Link>
-            </div>
+
+            <nav className="tr-tabs" aria-label={t('track.eyebrow')}>
+                {TABS.map(({ to, key, end }) => (
+                    <NavLink
+                        key={to}
+                        to={to}
+                        end={end}
+                        className={({ isActive }) => `tr-tab${isActive ? ' tr-tab--active' : ''}`}
+                    >
+                        {t(`track.tabs.${key}`)}
+                    </NavLink>
+                ))}
+            </nav>
+
+            <Outlet />
         </div>
     );
 }

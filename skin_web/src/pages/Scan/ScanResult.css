@@ -36,6 +36,12 @@
 
 .result-actions { display: flex; gap: var(--space-3); flex-wrap: wrap; }
 
+/* ── Save to tracking ─────────────────────────────────────────────────────── */
+.save-tracking { display: flex; align-items: flex-end; gap: var(--space-4); flex-wrap: wrap; }
+.save-tracking .pt-alert { flex-basis: 100%; }
+.save-tracking-field { flex: 1; min-width: 200px; max-width: 320px; }
+.save-tracking-done { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+
 /* ── Chat section ─────────────────────────────────────────────────────────── */
 .chat-section {
     display: flex; flex-direction: column; gap: 4px;

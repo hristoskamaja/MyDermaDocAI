@@ -22,6 +22,13 @@ import FindDermatologist from './pages/FindDermatologist/FindDermatologist';
 import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
 import ResetPassword from './pages/ResetPassword/ResetPassword';
 import Track from './pages/Track/Track';
+import TrackHub from './pages/Track/TrackHub';
+import CheckIn from './pages/Track/CheckIn';
+import Timeline from './pages/Track/Timeline';
+import Insights from './pages/Track/Insights';
+import Routine from './pages/Track/Routine';
+import WeeklyReport from './pages/Track/WeeklyReport';
+import Reminders from './pages/Track/Reminders';
 
 function PrivateRoute({ children }) {
     const { isAuthenticated } = useAuth();
@@ -73,7 +80,15 @@ function AppRoutes() {
                 <Route path="home"           element={<Home />} />
                 <Route path="scan"           element={<Scan />} />
                 <Route path="scan/:id"       element={<ScanResult />} />
-                <Route path="track"          element={<Track />} />
+                <Route path="track" element={<Track />}>
+                    <Route index              element={<TrackHub />} />
+                    <Route path="check-in"    element={<CheckIn />} />
+                    <Route path="timeline"    element={<Timeline />} />
+                    <Route path="insights"    element={<Insights />} />
+                    <Route path="routine"     element={<Routine />} />
+                    <Route path="weekly"      element={<WeeklyReport />} />
+                    <Route path="reminders"   element={<Reminders />} />
+                </Route>
                 <Route path="history"        element={<History />} />
                 <Route path="find-dermatologist" element={<FindDermatologist />} />
             </Route>
