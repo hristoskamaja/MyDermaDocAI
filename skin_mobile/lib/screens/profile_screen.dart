@@ -200,7 +200,7 @@ class ProfileScreen extends StatelessWidget {
               },
               icon: Icon(Icons.logout_rounded, color: c.high),
               label: Text(context.tr('profile.logout'), style: TextStyle(color: c.high)),
-              style: OutlinedButton.styleFrom(side: BorderSide(color: c.high.withOpacity(0.4))),
+              style: OutlinedButton.styleFrom(side: BorderSide(color: c.high.withValues(alpha: 0.4))),
             ),
           ),
         ],
@@ -243,7 +243,7 @@ class ProfileScreen extends StatelessWidget {
     return ListTile(
       leading: Icon(icon, color: c.primary),
       title: Text(title, style: TextStyle(color: c.text, fontWeight: FontWeight.w600)),
-      trailing: Switch(value: value, onChanged: onChanged, activeColor: c.primary),
+      trailing: Switch(value: value, onChanged: onChanged, activeThumbColor: c.primary),
     );
   }
 

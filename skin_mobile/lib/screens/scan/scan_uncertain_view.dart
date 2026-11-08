@@ -51,7 +51,7 @@ class ScanUncertainView extends StatelessWidget {
             decoration: BoxDecoration(
               color: c.uncertainSoft,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: c.uncertain.withOpacity(0.35)),
+              border: Border.all(color: c.uncertain.withValues(alpha: 0.35)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
