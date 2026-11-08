@@ -1,3 +1,4 @@
+import '../widgets/track/save_to_tracking_card.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/locale_context.dart';
@@ -103,7 +104,11 @@ class _AnalysisDetailScreenState extends State<AnalysisDetailScreen> with Locale
             treatmentOverview: detail.condition.treatmentOverview,
             recommendations: data.recommendations,
             isLowConfidence: detail.isLowConfidence,
-            trailing: AnalysisChatSection(analysisId: detail.id),
+            trailing: Column(children: [
+              SaveToTrackingCard(analysisId: detail.id),
+              const SizedBox(height: AppSpace.lg),
+              AnalysisChatSection(analysisId: detail.id),
+            ]),
           );
         },
       ),

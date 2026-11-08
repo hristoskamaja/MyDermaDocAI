@@ -4,7 +4,7 @@ import '../screens/history_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/scan/scan_flow_screen.dart';
-import '../screens/track_screen.dart';
+import '../screens/track/track_screen.dart';
 import 'bottom_nav.dart';
 
 /// Wraps Home / Track / History / Profile with the persistent bottom nav and

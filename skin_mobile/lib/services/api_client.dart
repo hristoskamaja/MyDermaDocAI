@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -176,7 +177,8 @@ class ApiClient {
   /// Sends a request built by [build] (called again after a refresh, so the
   /// new access token is picked up). On a 401 for an authenticated request:
   /// refresh once, retry once, and only end the session if refresh fails.
-  static Future<dynamic> _send(
+  /// Returns the raw response (no status check) so callers can read bytes.
+  static Future<http.Response> _sendRaw(
     Future<http.Response> Function() build, {
     required bool auth,
   }) async {
@@ -191,9 +193,7 @@ class ApiClient {
           onSessionExpired?.call();
         }
       }
-      return _handle(response);
-    } on ApiException {
-      rethrow;
+      return response;
     } on SocketException {
       throw ApiException(
         'Could not reach the server. Check your connection and the API base URL.',
@@ -201,6 +201,13 @@ class ApiClient {
     } catch (e) {
       throw ApiException('Something went wrong: $e');
     }
+  }
+
+  static Future<dynamic> _send(
+    Future<http.Response> Function() build, {
+    required bool auth,
+  }) async {
+    return _handle(await _sendRaw(build, auth: auth));
   }
 
   static Future<dynamic> get(String path, {bool auth = true}) {
@@ -225,6 +232,73 @@ class ApiClient {
             body: jsonEncode(body),
           )
           .timeout(const Duration(seconds: 30)),
+      auth: auth,
+    );
+  }
+
+  static Future<dynamic> put(String path, Map<String, dynamic> body, {bool auth = true}) {
+    return _send(
+      () async => http
+          .put(_uri(path), headers: await _headers(auth: auth), body: jsonEncode(body))
+          .timeout(const Duration(seconds: 30)),
+      auth: auth,
+    );
+  }
+
+  static Future<dynamic> patch(String path, Map<String, dynamic> body, {bool auth = true}) {
+    return _send(
+      () async => http
+          .patch(_uri(path), headers: await _headers(auth: auth), body: jsonEncode(body))
+          .timeout(const Duration(seconds: 30)),
+      auth: auth,
+    );
+  }
+
+  static Future<dynamic> delete(String path, {bool auth = true}) {
+    return _send(
+      () async => http
+          .delete(_uri(path), headers: await _headers(auth: auth))
+          .timeout(const Duration(seconds: 30)),
+      auth: auth,
+    );
+  }
+
+  /// Downloads a protected binary (e.g. a private check-in photo) with the
+  /// Bearer token. Throws [ApiException] on a non-2xx status.
+  static Future<Uint8List> getBytes(String path, {bool auth = true}) async {
+    final response = await _sendRaw(
+      () async => http
+          .get(_uri(path), headers: await _headers(auth: auth, json: false))
+          .timeout(const Duration(seconds: 30)),
+      auth: auth,
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException('Request failed (${response.statusCode}).', statusCode: response.statusCode);
+    }
+    return response.bodyBytes;
+  }
+
+  /// Multipart request with plain text [fields] and an optional [file]
+  /// (used to save a check-in together with its photo).
+  static Future<dynamic> sendMultipart(
+    String method,
+    String path, {
+    required Map<String, String> fields,
+    File? file,
+    String fileField = 'photo',
+    bool auth = true,
+  }) {
+    return _send(
+      () async {
+        final request = http.MultipartRequest(method, _uri(path));
+        request.headers.addAll(await _headers(auth: auth, json: false));
+        request.fields.addAll(fields);
+        if (file != null) {
+          request.files.add(await http.MultipartFile.fromPath(fileField, file.path));
+        }
+        final streamed = await request.send().timeout(const Duration(seconds: 60));
+        return http.Response.fromStream(streamed);
+      },
       auth: auth,
     );
   }
