@@ -22,6 +22,86 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Endpoints where a 401 means "wrong credentials" / "no session", not
+// "expired access token" - never try to refresh on these.
+const NO_REFRESH_PATHS = [
+    '/jwt-auth/login/',
+    '/jwt-auth/register/',
+    '/jwt-auth/refresh/',
+    '/jwt-auth/reset-password/request/',
+    '/jwt-auth/reset-password/confirm/',
+];
+
+// One shared in-flight refresh, so several requests that 401 at the same
+// time trigger a single /jwt-auth/refresh/ call instead of one each.
+let refreshPromise = null;
+
+function clearSessionAndRedirect() {
+    localStorage.removeItem('ss_token');
+    localStorage.removeItem('ss_refresh');
+    localStorage.removeItem('ss_user');
+    if (window.location.pathname !== '/login') {
+        window.location.assign('/login');
+    }
+}
+
+// Uses a bare axios call (not the `api` instance) so this request does not
+// go through the interceptors below and can never loop.
+function refreshAccessToken() {
+    if (!refreshPromise) {
+        const refresh = localStorage.getItem('ss_refresh');
+        if (!refresh) return Promise.reject(new Error('No refresh token'));
+
+        refreshPromise = axios
+            .post(`${BASE_URL}/jwt-auth/refresh/`, { refresh })
+            .then((res) => {
+                const access = res.data.access;
+                localStorage.setItem('ss_token', access);
+                // Only present when the backend rotates refresh tokens.
+                if (res.data.refresh) {
+                    localStorage.setItem('ss_refresh', res.data.refresh);
+                }
+                return access;
+            })
+            .finally(() => {
+                refreshPromise = null;
+            });
+    }
+    return refreshPromise;
+}
+
+// On a 401 (expired access token, 60 min): refresh once, retry the original
+// request once, and only log the user out if the refresh itself fails.
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const original = error.config;
+        const status = error.response && error.response.status;
+        const url = (original && original.url) || '';
+
+        if (
+            status !== 401 ||
+            !original ||
+            original._retry ||
+            NO_REFRESH_PATHS.some((p) => url.includes(p)) ||
+            !localStorage.getItem('ss_token')
+        ) {
+            return Promise.reject(error);
+        }
+
+        original._retry = true;
+
+        try {
+            const access = await refreshAccessToken();
+            original.headers.Authorization = `Bearer ${access}`;
+            return api(original);
+        } catch (refreshError) {
+            clearSessionAndRedirect();
+            return Promise.reject(error);
+        }
+    }
+);
+
 // ── JWT Auth ──────────────────────────────────────────────────────────────────
 export const jwtAPI = {
     register:       (data) => api.post('/jwt-auth/register/', data),
@@ -30,7 +110,9 @@ export const jwtAPI = {
     logout:         (data) => api.post('/jwt-auth/logout/', data),    // refresh token in body
     me:             ()     => api.get('/jwt-auth/me/'),
     changePassword: (data) => api.post('/jwt-auth/change-password/', data),
-    resetPassword:  (data) => api.post('/jwt-auth/reset-password/', data),
+    // Two steps: request emails a signed link, confirm uses its uid + token.
+    requestPasswordReset: (data) => api.post('/jwt-auth/reset-password/request/', data),
+    confirmPasswordReset: (data) => api.post('/jwt-auth/reset-password/confirm/', data),
 };
 
 // ── Users (Admin only) ────────────────────────────────────────────────────────

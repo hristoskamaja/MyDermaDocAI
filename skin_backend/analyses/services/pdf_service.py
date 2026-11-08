@@ -134,6 +134,9 @@ _LABELS = {
         "symptoms": "Symptoms",
         "treatment": "General treatment overview",
         "recommendations": "Recommendations",
+        "what_to_do": "What to do",
+        "what_to_avoid": "What to avoid",
+        "when_to_see_doctor": "When to see a doctor",
         "no_condition": "No condition could be matched for this scan.",
         "no_recommendations": "No recommendations available yet.",
         "disclaimer": (
@@ -163,6 +166,9 @@ _LABELS = {
         "symptoms": "Симптоми",
         "treatment": "Општ преглед на третман",
         "recommendations": "Препораки",
+        "what_to_do": "Што да направиш",
+        "what_to_avoid": "Што да избегнуваш",
+        "when_to_see_doctor": "Кога да одиш на лекар",
         "no_condition": "Не можеше да се препознае состојба за ова скенирање.",
         "no_recommendations": "Сè уште нема достапни препораки.",
         "disclaimer": (
@@ -260,10 +266,22 @@ def _get_localized_recommendations(condition, wants_english):
     recommendations = Recommendation.objects.filter(id__in=recommendation_ids)
 
     result = []
-    for rec in recommendations:
-        name = rec.name if wants_english else (rec.name_mk or rec.name)
-        description = rec.description if wants_english else (rec.description_mk or rec.description)
-        result.append({"name": name, "description": description or "", "type": rec.type})
+    for rec in recommendations.order_by("id"):
+        if wants_english:
+            name, description = rec.name, rec.description
+            avoid, see_doctor = rec.what_to_avoid, rec.when_to_see_doctor
+        else:
+            name = rec.name_mk or rec.name
+            description = rec.description_mk or rec.description
+            avoid = rec.what_to_avoid_mk or rec.what_to_avoid
+            see_doctor = rec.when_to_see_doctor_mk or rec.when_to_see_doctor
+        result.append({
+            "name": name,
+            "description": description or "",
+            "what_to_avoid": avoid or "",
+            "when_to_see_doctor": see_doctor or "",
+            "type": rec.type,
+        })
     return result
 
 
@@ -373,17 +391,32 @@ def build_analysis_pdf(analysis, lang="mk"):
             items = []
             for rec in recommendations:
                 type_label = labels["type_labels"].get(rec["type"], rec["type"])
-                items.append(
-                    ListItem(
-                        Paragraph(
-                            f"<font name='{_FONT_BOLD}'>{_escape(rec['name'])}</font> "
-                            f"<font color='{_HEX_TEXT_MUTED}'>({_escape(type_label)})</font>"
-                            f" &mdash; {_escape(rec['description'])}",
-                            styles["Body"],
-                        ),
-                        bulletColor=_COLOR_PRIMARY,
+
+                parts = [
+                    Paragraph(
+                        f"<font name='{_FONT_BOLD}'>{_escape(rec['name'])}</font> "
+                        f"<font color='{_HEX_TEXT_MUTED}'>({_escape(type_label)})</font>",
+                        styles["Body"],
                     )
-                )
+                ]
+
+                # What to do / avoid / when to see a doctor. Older
+                # recommendations only have the first part; empty parts
+                # are skipped.
+                for label_key, text in (
+                    ("what_to_do", rec["description"]),
+                    ("what_to_avoid", rec["what_to_avoid"]),
+                    ("when_to_see_doctor", rec["when_to_see_doctor"]),
+                ):
+                    if text:
+                        parts.append(Paragraph(
+                            f"<font name='{_FONT_BOLD}' color='{_HEX_PRIMARY}'>"
+                            f"{_escape(labels[label_key])}:</font> {_escape(text)}",
+                            styles["Body"],
+                        ))
+                parts.append(Spacer(1, 4))
+
+                items.append(ListItem(parts, bulletColor=_COLOR_PRIMARY))
             story.append(ListFlowable(items, bulletType="bullet", start="circle", leftIndent=14))
         else:
             story.append(Paragraph(labels["no_recommendations"], styles["Body"]))

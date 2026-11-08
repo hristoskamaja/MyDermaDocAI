@@ -9,7 +9,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.models import SkinCondition, Recommendation, ConditionRecommendation
+from core.models import SkinCondition
 from .models import Analysis, AnalysisChatMessage, ChatRole
 from .serializers import (
     AnalysisListSerializer,
@@ -17,10 +17,8 @@ from .serializers import (
     AnalysisChatMessageSerializer,
 )
 from .services.skin_model_service import predict_skin_condition, SkinModelPredictionError
-from .services.gemini_service import (
-    generate_recommendations_with_gemini,
-    generate_chat_answer,
-)
+from .services.gemini_service import generate_chat_answer
+from .services.recommendation_store import generate_recommendations_only_if_missing
 from .services.pdf_service import build_analysis_pdf
 
 MAX_CHAT_HISTORY_MESSAGES = 10
@@ -46,94 +44,6 @@ def can_access_analysis(request, analysis):
 
 def generate_analysis_key():
     return f"SK-{uuid.uuid4().hex[:8].upper()}"
-
-
-def condition_has_recommendations(condition):
-    if not condition:
-        return False
-    return ConditionRecommendation.objects.filter(condition=condition).exists()
-
-
-def save_gemini_recommendations_for_condition(condition, recommendations_data):
-    if not condition or not recommendations_data:
-        return []
-
-    saved = []
-
-    for item in recommendations_data:
-        name = item.get("name")
-        description = item.get("description")
-        rec_type = item.get("type")
-        name_mk = item.get("name_mk")
-        description_mk = item.get("description_mk")
-
-        if not name or not description or not rec_type:
-            continue
-
-        recommendation, created = Recommendation.objects.get_or_create(
-            name=name,
-            type=rec_type,
-            defaults={
-                "description": description,
-                "name_mk": name_mk,
-                "description_mk": description_mk,
-            },
-        )
-
-        if not created:
-            update_fields = []
-            if not recommendation.description:
-                recommendation.description = description
-                update_fields.append("description")
-            if not recommendation.name_mk and name_mk:
-                recommendation.name_mk = name_mk
-                update_fields.append("name_mk")
-            if not recommendation.description_mk and description_mk:
-                recommendation.description_mk = description_mk
-                update_fields.append("description_mk")
-            if update_fields:
-                recommendation.save(update_fields=update_fields)
-
-        ConditionRecommendation.objects.get_or_create(
-            condition=condition,
-            recommendation=recommendation,
-        )
-
-        saved.append(recommendation)
-
-    return saved
-
-
-def generate_recommendations_only_if_missing(condition):
-    """
-    Gemini is only called if the condition doesn't already have saved
-    recommendations - same as the treatments in leafscan (we don't want
-    different advice on every scan of the same condition).
-    """
-
-    if not condition:
-        return {"generated": False, "reason": "Missing condition.", "count": 0}
-
-    if condition_has_recommendations(condition):
-        existing_count = ConditionRecommendation.objects.filter(condition=condition).count()
-        return {
-            "generated": False,
-            "reason": "Recommendations already exist for this condition.",
-            "count": existing_count,
-        }
-
-    recommendations_data = generate_recommendations_with_gemini(
-        condition_name=condition.name,
-        severity=condition.severity or "MEDIUM",
-    )
-
-    saved = save_gemini_recommendations_for_condition(condition, recommendations_data)
-
-    return {
-        "generated": True,
-        "reason": "Recommendations generated successfully.",
-        "count": len(saved),
-    }
 
 
 # ---------------------------------------------------------------------------

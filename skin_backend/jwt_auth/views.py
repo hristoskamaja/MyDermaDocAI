@@ -13,7 +13,13 @@ from .serializers import (
     JwtRegisterSerializer,
     JwtLoginSerializer,
     JwtChangePasswordSerializer,
-    JwtResetPasswordSerializer,
+    JwtResetPasswordRequestSerializer,
+    JwtResetPasswordConfirmSerializer,
+)
+from .password_reset import (
+    GENERIC_REQUEST_MESSAGE,
+    confirm_reset,
+    send_reset_email,
 )
 
 User = get_user_model()
@@ -125,33 +131,47 @@ class JwtChangePasswordView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class JwtResetPasswordView(APIView):
+class JwtResetPasswordRequestView(APIView):
+    """Step 1: emails a signed, expiring reset link. Always answers 200."""
+
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = JwtResetPasswordSerializer(data=request.data)
+        serializer = JwtResetPasswordRequestSerializer(data=request.data)
 
         if serializer.is_valid():
-            email = serializer.validated_data["email"]
-            new_password = serializer.validated_data["new_password"]
+            send_reset_email(serializer.validated_data["email"])
+            return Response(
+                {"message": GENERIC_REQUEST_MESSAGE},
+                status=status.HTTP_200_OK,
+            )
 
-            try:
-                user = User.objects.get(email=email)
-            except User.DoesNotExist:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class JwtResetPasswordConfirmView(APIView):
+    """Step 2: sets the new password if uid + token are valid."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = JwtResetPasswordConfirmSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user, error = confirm_reset(
+                serializer.validated_data["uid"],
+                serializer.validated_data["token"],
+                serializer.validated_data["new_password"],
+            )
+
+            if error:
                 return Response(
-                    {
-                        "email": "User with this email does not exist."
-                    },
-                    status=status.HTTP_404_NOT_FOUND,
+                    {"detail": error},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            user.set_password(new_password)
-            user.save()
-
             return Response(
-                {
-                    "message": "Password reset successfully."
-                },
+                {"message": "Password reset successfully."},
                 status=status.HTTP_200_OK,
             )
 

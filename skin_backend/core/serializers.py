@@ -50,7 +50,12 @@ class RecommendationSerializer(serializers.ModelSerializer):
             "name_mk",
             "description",
             "description_mk",
+            "what_to_avoid",
+            "what_to_avoid_mk",
+            "when_to_see_doctor",
+            "when_to_see_doctor_mk",
             "type",
+            "is_fallback",
         ]
 
 
@@ -65,10 +70,19 @@ class LocalizedRecommendationSerializer(serializers.ModelSerializer):
     """
     name = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
+    what_to_avoid = serializers.SerializerMethodField()
+    when_to_see_doctor = serializers.SerializerMethodField()
 
     class Meta:
         model = Recommendation
-        fields = ["id", "name", "description", "type"]
+        fields = [
+            "id",
+            "name",
+            "description",
+            "what_to_avoid",
+            "when_to_see_doctor",
+            "type",
+        ]
 
     def _wants_macedonian(self):
         request = self.context.get("request")
@@ -80,10 +94,23 @@ class LocalizedRecommendationSerializer(serializers.ModelSerializer):
             return obj.name_mk or obj.name
         return obj.name
 
+    # `description` is the "what to do" part. The two new parts are
+    # returned as null (not "") when empty, so clients can simply hide them
+    # for older recommendations that don't have them.
     def get_description(self, obj):
         if self._wants_macedonian():
             return obj.description_mk or obj.description
         return obj.description
+
+    def get_what_to_avoid(self, obj):
+        if self._wants_macedonian():
+            return obj.what_to_avoid_mk or obj.what_to_avoid or None
+        return obj.what_to_avoid or None
+
+    def get_when_to_see_doctor(self, obj):
+        if self._wants_macedonian():
+            return obj.when_to_see_doctor_mk or obj.when_to_see_doctor or None
+        return obj.when_to_see_doctor or None
 
 
 class DermatologistSerializer(serializers.ModelSerializer):

@@ -283,7 +283,25 @@ export default function ScanResult() {
                             {g.items.map(r => (
                                 <div key={r.id} className="rec-card">
                                     <div className="rec-card-name">{r.name}</div>
-                                    {r.description && <div className="rec-card-desc">{r.description}</div>}
+                                    {/* Older recommendations only have the first part; the rest are hidden when empty. */}
+                                    {r.description && (
+                                        <div className="rec-card-part">
+                                            <span className="rec-card-label">{t('result.whatToDo')}</span>
+                                            <span className="rec-card-desc">{r.description}</span>
+                                        </div>
+                                    )}
+                                    {r.what_to_avoid && (
+                                        <div className="rec-card-part">
+                                            <span className="rec-card-label">{t('result.whatToAvoid')}</span>
+                                            <span className="rec-card-desc">{r.what_to_avoid}</span>
+                                        </div>
+                                    )}
+                                    {r.when_to_see_doctor && (
+                                        <div className="rec-card-part">
+                                            <span className="rec-card-label">{t('result.whenToSeeDoctor')}</span>
+                                            <span className="rec-card-desc">{r.when_to_see_doctor}</span>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                             {g.type === 'MEDICAL_CONSULT' && (

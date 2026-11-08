@@ -14,6 +14,8 @@ void main() {
   runApp(const DermaScanApp());
 }
 
+final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
 class DermaScanApp extends StatelessWidget {
   const DermaScanApp({super.key});
 
@@ -21,7 +23,11 @@ class DermaScanApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider()
+            ..onForcedLogout = () => _navigatorKey.currentState
+                ?.pushNamedAndRemoveUntil('/login', (_) => false),
+        ),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],
@@ -30,6 +36,7 @@ class DermaScanApp extends StatelessWidget {
           return MaterialApp(
             title: 'DermaScanAI',
             debugShowCheckedModeBanner: false,
+            navigatorKey: _navigatorKey,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.mode,

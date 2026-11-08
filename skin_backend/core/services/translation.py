@@ -20,11 +20,14 @@ therefore batches ALL fields that need translating into ONE Gemini call
 """
 
 import json
+import logging
 import os
 
 from google import genai
 from google.genai import types
 from google.genai.errors import APIError
+
+logger = logging.getLogger(__name__)
 
 GEMINI_MODEL = "gemini-flash-latest"
 
@@ -64,6 +67,10 @@ def translate_fields_to_english(fields: dict) -> dict:
 
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
+        logger.warning(
+            "GEMINI_API_KEY is not set; skipping translation of: %s",
+            ", ".join(items),
+        )
         return {}
 
     payload = json.dumps(items, ensure_ascii=False)
@@ -95,10 +102,12 @@ Input JSON:
         )
 
         if not response.text:
+            logger.warning("Gemini returned an empty translation response.")
             return {}
 
         translated = json.loads(response.text)
         if not isinstance(translated, dict):
+            logger.warning("Gemini translation response was not a JSON object.")
             return {}
 
         return {
@@ -108,10 +117,15 @@ Input JSON:
         }
 
     except APIError as error:
-        print(f"Gemini translation API error: {error}")
+        # Includes 429 (free-tier quota: 5/min, 20/day).
+        logger.error(
+            "Gemini translation API error (code=%s): %s",
+            getattr(error, "code", None),
+            error,
+        )
         return {}
-    except Exception as error:
-        print(f"Unexpected translation error: {error}")
+    except Exception:
+        logger.exception("Unexpected translation error")
         return {}
 
 

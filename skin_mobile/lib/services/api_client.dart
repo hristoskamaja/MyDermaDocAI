@@ -128,11 +128,69 @@ class ApiClient {
     return null;
   }
 
-  static Future<dynamic> get(String path, {bool auth = true}) async {
+  /// Called when the session cannot be recovered (refresh token missing,
+  /// expired or rejected). AuthProvider hooks into this to log the user out.
+  static void Function()? onSessionExpired;
+
+  // One shared in-flight refresh, so several requests that get a 401 at the
+  // same time trigger a single /jwt-auth/refresh/ call.
+  static Future<bool>? _refreshing;
+
+  /// Exchanges the stored refresh token for a new access token.
+  /// Returns false if that is not possible.
+  static Future<bool> _refreshAccessToken() {
+    return _refreshing ??= _doRefresh().whenComplete(() => _refreshing = null);
+  }
+
+  static Future<bool> _doRefresh() async {
+    final refresh = await TokenStorage.getRefreshToken();
+    if (refresh == null) return false;
     try {
       final response = await http
-          .get(_uri(path), headers: await _headers(auth: auth))
+          .post(
+            _uri('/jwt-auth/refresh/'),
+            headers: await _headers(auth: false),
+            body: jsonEncode({'refresh': refresh}),
+          )
           .timeout(const Duration(seconds: 30));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return false;
+      }
+      final decoded = _decode(response);
+      if (decoded is! Map || decoded['access'] is! String) return false;
+      await TokenStorage.saveAccessToken(decoded['access'] as String);
+      // Only present if the backend ever turns on refresh rotation.
+      if (decoded['refresh'] is String) {
+        await TokenStorage.saveTokens(
+          access: decoded['access'] as String,
+          refresh: decoded['refresh'] as String,
+        );
+      }
+      return true;
+    } catch (_) {
+      // Network problem: keep the session, the caller sees the original 401.
+      return false;
+    }
+  }
+
+  /// Sends a request built by [build] (called again after a refresh, so the
+  /// new access token is picked up). On a 401 for an authenticated request:
+  /// refresh once, retry once, and only end the session if refresh fails.
+  static Future<dynamic> _send(
+    Future<http.Response> Function() build, {
+    required bool auth,
+  }) async {
+    try {
+      var response = await build();
+      if (response.statusCode == 401 && auth) {
+        final hadRefreshToken = await TokenStorage.getRefreshToken() != null;
+        if (await _refreshAccessToken()) {
+          response = await build();
+        } else if (hadRefreshToken || await TokenStorage.getAccessToken() != null) {
+          await TokenStorage.clear();
+          onSessionExpired?.call();
+        }
+      }
       return _handle(response);
     } on ApiException {
       rethrow;
@@ -145,29 +203,30 @@ class ApiClient {
     }
   }
 
+  static Future<dynamic> get(String path, {bool auth = true}) {
+    return _send(
+      () async => http
+          .get(_uri(path), headers: await _headers(auth: auth))
+          .timeout(const Duration(seconds: 30)),
+      auth: auth,
+    );
+  }
+
   static Future<dynamic> post(
     String path,
     Map<String, dynamic> body, {
     bool auth = true,
-  }) async {
-    try {
-      final response = await http
+  }) {
+    return _send(
+      () async => http
           .post(
             _uri(path),
             headers: await _headers(auth: auth),
             body: jsonEncode(body),
           )
-          .timeout(const Duration(seconds: 30));
-      return _handle(response);
-    } on ApiException {
-      rethrow;
-    } on SocketException {
-      throw ApiException(
-        'Could not reach the server. Check your connection and the API base URL.',
-      );
-    } catch (e) {
-      throw ApiException('Something went wrong: $e');
-    }
+          .timeout(const Duration(seconds: 30)),
+      auth: auth,
+    );
   }
 
   /// Multipart upload, used for `POST /analyses/scan-skin/`.
@@ -176,26 +235,22 @@ class ApiClient {
     required String fieldName,
     required File file,
     bool auth = true,
-  }) async {
-    try {
-      final request = http.MultipartRequest('POST', _uri(path));
-      request.headers.addAll(await _headers(auth: auth, json: false));
-      request.files.add(
-        await http.MultipartFile.fromPath(fieldName, file.path),
-      );
-      final streamed = await request.send().timeout(
-            const Duration(seconds: 60),
-          );
-      final response = await http.Response.fromStream(streamed);
-      return _handle(response);
-    } on ApiException {
-      rethrow;
-    } on SocketException {
-      throw ApiException(
-        'Could not reach the server. Check your connection and the API base URL.',
-      );
-    } catch (e) {
-      throw ApiException('Something went wrong: $e');
-    }
+  }) {
+    return _send(
+      () async {
+        // A MultipartRequest can only be sent once, so build a new one on
+        // every attempt.
+        final request = http.MultipartRequest('POST', _uri(path));
+        request.headers.addAll(await _headers(auth: auth, json: false));
+        request.files.add(
+          await http.MultipartFile.fromPath(fieldName, file.path),
+        );
+        final streamed = await request.send().timeout(
+              const Duration(seconds: 60),
+            );
+        return http.Response.fromStream(streamed);
+      },
+      auth: auth,
+    );
   }
 }

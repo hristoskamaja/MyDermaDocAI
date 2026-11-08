@@ -4,13 +4,17 @@ gemini_service.py
 """
 
 import json
+import logging
 import os
+import re
 import time
 from typing import List, Dict
 
 from google import genai
 from google.genai import types
 from google.genai.errors import APIError
+
+logger = logging.getLogger(__name__)
 
 # "gemini-2.5-flash" was cut off by Google for new projects (full shutdown
 # planned for October 2026) - we use the "latest" alias instead of a fixed
@@ -37,16 +41,28 @@ _RETRY_BACKOFF_SECONDS = 1.5
 # doesn't recognize this field, we fall back to no explicit timeout
 # instead of crashing the import (which would break every view in this
 # app, since views.py imports from this module at startup).
+#
+# The recommendation answer is now much longer (5-7 rich items in two
+# languages), so it gets a larger timeout than the short chat answers.
 _GEMINI_TIMEOUT_MS = 15_000
-try:
-    _HTTP_OPTIONS = types.HttpOptions(timeout=_GEMINI_TIMEOUT_MS)
-except Exception:
-    _HTTP_OPTIONS = None
+_GEMINI_LONG_TIMEOUT_MS = 40_000
 
 
-def _make_client(api_key: str):
-    if _HTTP_OPTIONS is not None:
-        return genai.Client(api_key=api_key, http_options=_HTTP_OPTIONS)
+def _build_http_options(timeout_ms):
+    try:
+        return types.HttpOptions(timeout=timeout_ms)
+    except Exception:
+        return None
+
+
+_HTTP_OPTIONS = _build_http_options(_GEMINI_TIMEOUT_MS)
+_LONG_HTTP_OPTIONS = _build_http_options(_GEMINI_LONG_TIMEOUT_MS)
+
+
+def _make_client(api_key: str, long_timeout: bool = False):
+    http_options = _LONG_HTTP_OPTIONS if long_timeout else _HTTP_OPTIONS
+    if http_options is not None:
+        return genai.Client(api_key=api_key, http_options=http_options)
     return genai.Client(api_key=api_key)
 
 
@@ -82,107 +98,140 @@ def _generate_content_with_retry(client, prompt, config):
 
 ALLOWED_RECOMMENDATION_TYPES = ["SELF_CARE", "MEDICAL_CONSULT", "LIFESTYLE"]
 
+# Each condition gets 5-7 recommendations. Per-type caps keep the list
+# balanced (and make sure MEDICAL_CONSULT can't crowd out the care advice).
+MIN_RECOMMENDATIONS = 5
+MAX_RECOMMENDATIONS = 7
+MAX_PER_TYPE = {"SELF_CARE": 3, "LIFESTYLE": 3, "MEDICAL_CONSULT": 2}
+
+# A "what to do" shorter than this is just a slogan, not useful advice.
+MIN_DESCRIPTION_LENGTH = 40
+
+# Safety net on top of the prompt rule "no medications or doses": drop any
+# item that still contains a dose-like quantity (e.g. "500 mg", "2 ml").
+_DOSE_PATTERN = re.compile(r"\b\d+(?:[.,]\d+)?\s?(?:mg|mcg|µg|ml|iu)\b", re.IGNORECASE)
+
+# Text fields of a recommendation (English key, Macedonian key).
+_TEXT_FIELDS = [
+    ("name", "name_mk"),
+    ("description", "description_mk"),
+    ("what_to_avoid", "what_to_avoid_mk"),
+    ("when_to_see_doctor", "when_to_see_doctor_mk"),
+]
+
 
 def build_recommendation_prompt(condition_name: str, severity: str) -> str:
     return f"""
 You are a dermatology information assistant. You are NOT a doctor and must
 never claim to provide a medical diagnosis or prescribe treatment.
 
-Generate general care information for the following predicted skin condition:
+Generate general, educational care information for the following predicted
+skin condition:
 
 Condition name: {condition_name}
 Severity category: {severity}
 
 Rules:
-- Return ONLY valid JSON.
-- Do not include markdown.
-- Do not include explanations outside the JSON.
-- Return minimum 2 and maximum 6 recommendations.
-- Return maximum 2 recommendations per type.
+- Return ONLY valid JSON. No markdown, no text outside the JSON.
+- Return between {MIN_RECOMMENDATIONS} and {MAX_RECOMMENDATIONS} recommendations (aim for 6).
+- Allowed recommendation types and the maximum number of each:
+  - SELF_CARE (max {MAX_PER_TYPE["SELF_CARE"]})
+  - LIFESTYLE (max {MAX_PER_TYPE["LIFESTYLE"]})
+  - MEDICAL_CONSULT (max {MAX_PER_TYPE["MEDICAL_CONSULT"]})
 - You MUST include at least ONE recommendation of type "MEDICAL_CONSULT"
-  that clearly advises the user to see a dermatologist or doctor for proper
-  diagnosis and treatment. If severity is "HIGH", make this urgency explicit.
-- Never suggest specific medications, dosages, or definitive diagnoses.
-- Allowed recommendation types are:
-  - SELF_CARE
-  - MEDICAL_CONSULT
-  - LIFESTYLE
-- The app is bilingual (English/Macedonian), so provide EVERY recommendation
-  in BOTH languages: "name"/"description" in English, and "name_mk"/
-  "description_mk" as a natural (not literal word-for-word) Macedonian
-  translation with the same meaning and tone.
+  that clearly advises seeing a dermatologist for a proper diagnosis. If the
+  severity is "HIGH", make the urgency explicit.
+- NEVER diagnose, never say what the user's lesion definitely is, and never
+  name specific medications, active drug ingredients, brands, or dosages.
+  Keep advice general (for example sun protection, gentle skin care,
+  monitoring changes, not picking or scratching, photographing the area).
+- Every recommendation must be specific to this condition, practical and
+  written in plain, calm language. Do not repeat the same advice twice.
+- The app is bilingual (English/Macedonian), so provide EVERY text field in
+  BOTH languages: the English fields, and the "_mk" fields as a natural (not
+  word-for-word) Macedonian translation with the same meaning and tone.
 
-Each recommendation must have:
-- name
-- name_mk
-- description
-- description_mk
-- type
+Each recommendation must have these fields:
+- "type": one of the allowed types
+- "name" / "name_mk": a short title (max 8 words)
+- "description" / "description_mk": WHAT TO DO - 2 to 3 complete sentences
+  with concrete, practical steps
+- "what_to_avoid" / "what_to_avoid_mk": WHAT TO AVOID - 1 to 2 sentences
+- "when_to_see_doctor" / "when_to_see_doctor_mk": WHEN TO SEE A DOCTOR - 1 to
+  2 sentences naming concrete warning signs (for example rapid growth,
+  bleeding, pain, color change, a sore that does not heal)
 
 The response must be a JSON array in this format:
 
 [
   {{
+    "type": "MEDICAL_CONSULT",
     "name": "See a dermatologist",
     "name_mk": "Посети дерматолог",
-    "description": "Schedule an appointment with a dermatologist for a proper clinical evaluation and, if needed, a biopsy.",
-    "description_mk": "Закажи преглед кај дерматолог за соодветна клиничка проценка и, ако е потребно, биопсија.",
-    "type": "MEDICAL_CONSULT"
+    "description": "Book an appointment with a dermatologist for a proper examination. Bring dated photos of the area so changes over time are easy to see.",
+    "description_mk": "Закажи преглед кај дерматолог за соодветна проценка. Понеси датирани фотографии од подрачјето за полесно да се видат промените со времето.",
+    "what_to_avoid": "Do not wait for the area to go away on its own or try to remove it yourself.",
+    "what_to_avoid_mk": "Не чекај подрачјето да исчезне само и не обидувај се сам да го отстраниш.",
+    "when_to_see_doctor": "As soon as you can, and sooner if the area bleeds, hurts, grows quickly or changes color.",
+    "when_to_see_doctor_mk": "Што е можно побрзо, а уште поскоро ако крвави, боли, расте брзо или менува боја."
   }}
 ]
 """
 
 
+def _clean(value) -> str:
+    return str(value).strip() if value else ""
+
+
 def validate_recommendations(recommendations: List[Dict]) -> List[Dict]:
     valid_recommendations = []
 
-    type_counter = {
-        "SELF_CARE": 0,
-        "MEDICAL_CONSULT": 0,
-        "LIFESTYLE": 0,
-    }
+    type_counter = {rec_type: 0 for rec_type in ALLOWED_RECOMMENDATION_TYPES}
 
     for item in recommendations:
         if not isinstance(item, dict):
             continue
 
-        name = item.get("name")
-        description = item.get("description")
-        rec_type = item.get("type")
+        name = _clean(item.get("name"))
+        description = _clean(item.get("description"))
+        rec_type = _clean(item.get("type")).upper()
 
         if not name or not description or not rec_type:
             continue
 
-        rec_type = str(rec_type).upper().strip()
-
         if rec_type not in ALLOWED_RECOMMENDATION_TYPES:
             continue
 
-        if type_counter[rec_type] >= 2:
+        if len(description) < MIN_DESCRIPTION_LENGTH:
             continue
 
-        # name_mk/description_mk are best-effort - if Gemini omitted them,
-        # fall back to the English text rather than dropping the whole
-        # recommendation (an English-only card beats no card at all).
-        name_mk = item.get("name_mk") or name
-        description_mk = item.get("description_mk") or description
+        if type_counter[rec_type] >= MAX_PER_TYPE[rec_type]:
+            continue
 
-        valid_recommendations.append({
-            "name": str(name).strip(),
-            "name_mk": str(name_mk).strip(),
-            "description": str(description).strip(),
-            "description_mk": str(description_mk).strip(),
-            "type": rec_type,
-        })
+        cleaned = {"type": rec_type}
+        for en_key, mk_key in _TEXT_FIELDS:
+            en_value = _clean(item.get(en_key))
+            # The _mk text is best-effort - if Gemini omitted it, fall back
+            # to the English text rather than dropping the whole item (an
+            # English-only card beats no card at all).
+            cleaned[en_key] = en_value
+            cleaned[mk_key] = _clean(item.get(mk_key)) or en_value
 
+        # Safety net: no dose-like quantities in any text field.
+        if any(_DOSE_PATTERN.search(cleaned[key]) for pair in _TEXT_FIELDS for key in pair):
+            continue
+
+        valid_recommendations.append(cleaned)
         type_counter[rec_type] += 1
 
-        if len(valid_recommendations) >= 6:
+        if len(valid_recommendations) >= MAX_RECOMMENDATIONS:
             break
 
     # GUARANTEE: there must always be at least one MEDICAL_CONSULT, even if
     # Gemini doesn't return one (or returns invalid JSON).
     if type_counter["MEDICAL_CONSULT"] == 0:
+        if len(valid_recommendations) >= MAX_RECOMMENDATIONS:
+            valid_recommendations.pop()
         valid_recommendations.append(get_mandatory_medical_consult())
 
     return valid_recommendations
@@ -190,6 +239,7 @@ def validate_recommendations(recommendations: List[Dict]) -> List[Dict]:
 
 def get_mandatory_medical_consult() -> Dict:
     return {
+        "type": "MEDICAL_CONSULT",
         "name": "Consult a dermatologist",
         "name_mk": "Посети дерматолог",
         "description": (
@@ -200,7 +250,22 @@ def get_mandatory_medical_consult() -> Dict:
             "Овој резултат е AI-генерирана процена, а не медицинска дијагноза. "
             "Посети лиценциран дерматолог за точна проценка."
         ),
-        "type": "MEDICAL_CONSULT",
+        "what_to_avoid": (
+            "Do not rely on this app alone, and do not try to treat or remove "
+            "the area yourself."
+        ),
+        "what_to_avoid_mk": (
+            "Не се потпирај само на оваа апликација и не обидувај се сам да го "
+            "третираш или отстраниш подрачјето."
+        ),
+        "when_to_see_doctor": (
+            "As soon as you reasonably can, and sooner if the area bleeds, "
+            "hurts, grows quickly or changes color or shape."
+        ),
+        "when_to_see_doctor_mk": (
+            "Што е можно побрзо, а уште поскоро ако подрачјето крвави, боли, "
+            "расте брзо или менува боја или облик."
+        ),
     }
 
 
@@ -208,6 +273,7 @@ def get_fallback_recommendations(condition_name: str, severity: str) -> List[Dic
     fallback = [get_mandatory_medical_consult()]
 
     fallback.append({
+        "type": "SELF_CARE",
         "name": "Monitor for changes",
         "name_mk": "Следи ги промените",
         "description": (
@@ -218,17 +284,29 @@ def get_fallback_recommendations(condition_name: str, severity: str) -> List[Dic
             f"Следи ги промените во големина, облик или боја на подрачјето "
             f"поврзано со {condition_name}, и направи датирана фотографија за споредба."
         ),
-        "type": "SELF_CARE",
+        "what_to_avoid": "Do not scratch, pick at or irritate the area.",
+        "what_to_avoid_mk": "Не чешај, не чепкај и не го иритирај подрачјето.",
+        "when_to_see_doctor": (
+            "If you notice any change, bleeding, pain or a sore that does not heal."
+        ),
+        "when_to_see_doctor_mk": (
+            "Ако забележиш каква било промена, крвавење, болка или рана што не заздравува."
+        ),
     })
 
     return fallback
 
 
-def generate_recommendations_with_gemini(
-    condition_name: str,
-    severity: str,
-    use_fallback: bool = True,
-) -> List[Dict]:
+def generate_recommendations_detailed(condition_name: str, severity: str) -> Dict:
+    """
+    Calls Gemini and returns {"items": [...], "is_fallback": bool}.
+
+    `is_fallback` is True when the items are NOT a complete, successful
+    Gemini answer (API error, bad JSON, or fewer than MIN_RECOMMENDATIONS
+    valid items). The caller must not treat such a list as the final,
+    cached advice for the condition - it is shown, but replaced the next
+    time generation succeeds.
+    """
     api_key = os.getenv("GEMINI_API_KEY")
 
     if not api_key:
@@ -239,56 +317,83 @@ def generate_recommendations_with_gemini(
         severity=severity,
     )
 
+    def fallback(reason):
+        logger.warning(
+            "Using fallback recommendations for %r (%s).", condition_name, reason
+        )
+        return {
+            "items": get_fallback_recommendations(condition_name, severity),
+            "is_fallback": True,
+        }
+
     try:
-        client = _make_client(api_key)
+        client = _make_client(api_key, long_timeout=True)
         response = _generate_content_with_retry(
             client,
             prompt,
             types.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.4,
+                max_output_tokens=8192,
             ),
         )
 
         if not response.text:
-            if use_fallback:
-                return get_fallback_recommendations(condition_name, severity)
-            return []
+            return fallback("empty response")
 
         try:
             recommendations = json.loads(response.text)
         except json.JSONDecodeError:
-            if use_fallback:
-                return get_fallback_recommendations(condition_name, severity)
-            return []
+            return fallback("invalid JSON")
 
         if not isinstance(recommendations, list):
-            if use_fallback:
-                return get_fallback_recommendations(condition_name, severity)
-            return []
+            return fallback("response was not a JSON array")
 
         valid_recommendations = validate_recommendations(recommendations)
 
-        if not valid_recommendations and use_fallback:
-            return get_fallback_recommendations(condition_name, severity)
+        if not valid_recommendations:
+            return fallback("no valid items")
 
-        return valid_recommendations
+        if len(valid_recommendations) < MIN_RECOMMENDATIONS:
+            logger.warning(
+                "Gemini returned only %d valid recommendations for %r (need %d); "
+                "keeping them but marking as incomplete.",
+                len(valid_recommendations), condition_name, MIN_RECOMMENDATIONS,
+            )
+            return {"items": valid_recommendations, "is_fallback": True}
+
+        return {"items": valid_recommendations, "is_fallback": False}
 
     except APIError as error:
-        print(f"Gemini API error: {error}")
+        # Includes 429 (free-tier quota: 5/min, 20/day).
+        logger.error(
+            "Gemini API error while generating recommendations (code=%s): %s",
+            getattr(error, "code", None), error,
+        )
+        return fallback("API error")
 
-        if use_fallback:
-            return get_fallback_recommendations(condition_name, severity)
+    except Exception:
+        logger.exception("Unexpected Gemini service error")
+        return fallback("unexpected error")
 
-        return []
 
-    except Exception as error:
-        print(f"Unexpected Gemini service error: {error}")
+def generate_recommendations_with_gemini(
+    condition_name: str,
+    severity: str,
+    use_fallback: bool = True,
+) -> List[Dict]:
+    """Backwards-compatible wrapper: just the list of recommendation dicts."""
+    result = generate_recommendations_detailed(condition_name, severity)
 
-        if use_fallback:
-            return get_fallback_recommendations(condition_name, severity)
+    if result["is_fallback"] and not use_fallback:
+        # Keep a partially valid Gemini answer, but drop pure fallback text.
+        fallback_names = {
+            item["name"]
+            for item in get_fallback_recommendations(condition_name, severity)
+        }
+        return [item for item in result["items"] if item["name"] not in fallback_names]
 
-        return []
+    return result["items"]
 
 
 # ---------------------------------------------------------------------------
@@ -388,9 +493,11 @@ def generate_chat_answer(
         return text if text else CHAT_ANSWER_FALLBACK
 
     except APIError as error:
-        print(f"Gemini API error (chat): {error}")
+        logger.error(
+            "Gemini API error (chat) (code=%s): %s", getattr(error, "code", None), error
+        )
         return CHAT_ANSWER_FALLBACK
 
-    except Exception as error:
-        print(f"Unexpected Gemini chat error: {error}")
+    except Exception:
+        logger.exception("Unexpected Gemini chat error")
         return CHAT_ANSWER_FALLBACK

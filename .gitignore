@@ -7,6 +7,10 @@
 .DS_Store
 Thumbs.db
 
+# Claude Code (local settings) and design reference screenshots
+.claude/settings.local.json
+design-reference/
+
 # Docker/K8s
 .env
 k8s/*-secret.yaml

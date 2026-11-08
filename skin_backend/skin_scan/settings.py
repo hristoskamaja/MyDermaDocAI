@@ -192,6 +192,52 @@ SIMPLE_JWT = {
 }
 
 
+# --- Password reset (signed, expiring token sent by email) ---
+# Tokens come from django.contrib.auth.tokens.default_token_generator. They
+# expire after PASSWORD_RESET_TIMEOUT seconds and stop working as soon as the
+# password changes (the token hashes the current password hash).
+
+PASSWORD_RESET_TIMEOUT = 60 * 60  # 1 hour
+
+# Base URL of the web app; the reset email links to
+# <FRONTEND_URL>/reset-password?uid=...&token=...
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+# In DEBUG emails are printed to the console, so no SMTP is needed locally.
+# Outside DEBUG set EMAIL_HOST / EMAIL_HOST_USER / EMAIL_HOST_PASSWORD etc.
+if DEBUG and not os.getenv("EMAIL_HOST"):
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "DermaScanAI <no-reply@dermascan.local>")
+
+
+# --- Logging ---
+# Gemini/translation failures used to be print()ed; they now go through the
+# standard logging module so they show up in the server log.
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+    },
+    "loggers": {
+        "core": {"handlers": ["console"], "level": "INFO"},
+        "analyses": {"handlers": ["console"], "level": "INFO"},
+        "jwt_auth": {"handlers": ["console"], "level": "INFO"},
+    },
+}
+
+
 # --- CORS ---
 # Allows React (localhost:3000) and Flutter dev to talk to the backend.
 
