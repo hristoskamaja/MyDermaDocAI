@@ -48,16 +48,38 @@ class ChatAnswerTests(SimpleTestCase):
         client = ScriptedClient([APIError(503, {"error": {"message": "x"}}), APIError(429, {"error": {"message": "x"}}), "ok"])
         self.assertEqual(self.ask(client), "ok")
 
-    def test_last_retry_uses_lighter_model(self, sleep):
-        client = ScriptedClient([timeout_error(), timeout_error(), "From lite."])
-        self.assertEqual(self.ask(client), "From lite.")
+    def test_first_attempt_uses_lite_and_retry_uses_regular_model(self, sleep):
+        client = ScriptedClient([timeout_error(), "From the regular model."])
+        self.assertEqual(self.ask(client), "From the regular model.")
+        self.assertEqual(client.models_used, ["gemini-flash-lite-latest", "gemini-flash-latest"])
+
+    def test_lite_success_needs_no_retry(self, sleep):
+        client = ScriptedClient(["Quick answer."])
+        self.assertEqual(self.ask(client), "Quick answer.")
+        self.assertEqual(client.models_used, ["gemini-flash-lite-latest"])
+        sleep.assert_not_called()
+
+    def test_fast_errors_use_all_three_attempts(self, sleep):
+        busy = APIError(503, {"error": {"message": "busy"}})
+        client = ScriptedClient([busy, busy, "Third time."])
+        self.assertEqual(self.ask(client), "Third time.")
         self.assertEqual(
             client.models_used,
-            [gemini_service.GEMINI_MODEL, gemini_service.GEMINI_MODEL, gemini_service.GEMINI_FALLBACK_MODEL],
+            ["gemini-flash-lite-latest", "gemini-flash-latest", "gemini-flash-latest"],
         )
 
+    def test_worst_case_timing_stays_under_about_50_seconds(self, sleep):
+        self.assertEqual(gemini_service._GEMINI_CHAT_TIMEOUT_MS, 20_000)
+        self.assertLessEqual(gemini_service._CHAT_BUDGET_S, 50)
+        # Two 20s timeouts + backoff fit; a third 20s attempt would not.
+        client = ScriptedClient([timeout_error(), timeout_error(), "never reached"])
+        with mock.patch.object(gemini_service.time, "monotonic", side_effect=[0, 21.5, 41.5, 41.5]):
+            self.assertEqual(self.ask(client), gemini_service.CHAT_ANSWER_FALLBACK)
+        self.assertEqual(len(client.models_used), 2)
+
     def test_all_attempts_fail_returns_safe_fallback_and_logs(self, sleep):
-        client = ScriptedClient([timeout_error(), timeout_error(), timeout_error()])
+        busy = APIError(503, {"error": {"message": "busy"}})
+        client = ScriptedClient([busy, busy, APIError(504, {"error": {"message": "DEADLINE_EXCEEDED"}})])
         with self.assertLogs("analyses.services.gemini_service", level="ERROR") as logs:
             answer = self.ask(client)
         self.assertEqual(answer, gemini_service.CHAT_ANSWER_FALLBACK)

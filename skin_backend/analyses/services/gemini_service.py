@@ -46,9 +46,9 @@ _RETRY_BACKOFF_SECONDS = 1.5
 # languages), so it gets a larger timeout than the short chat answers.
 _GEMINI_TIMEOUT_MS = 15_000
 _GEMINI_LONG_TIMEOUT_MS = 40_000
-# Chat is not part of the scan request, so it can wait longer (Gemini
-# sometimes answers with 504 DEADLINE_EXCEEDED after ~20s).
-_GEMINI_CHAT_TIMEOUT_MS = 45_000
+# Chat uses the light model first (it answers in a few seconds); a slow
+# attempt is cut off after 20s so a retry on the other model still fits.
+_GEMINI_CHAT_TIMEOUT_MS = 20_000
 
 # Recommendations run inside the scan request: a retry is only started if
 # it can still finish within this budget, so the worst case stays below the
@@ -56,10 +56,16 @@ _GEMINI_CHAT_TIMEOUT_MS = 45_000
 # elapsed + backoff + 40s <= 55s).
 _RECOMMENDATION_BUDGET_S = 55
 
-# Chat: 1 try + 2 retries, retrying 504 too; the last retry uses a lighter model.
+# Chat: up to 3 attempts, retrying 504 too. The first attempt uses the light
+# model, retries use the regular one. A retry only starts if it can still
+# finish inside the budget, so the worst case stays under ~50s
+# (20s + backoff + 20s for two timeouts).
 _CHAT_MAX_ATTEMPTS = 3
 _CHAT_RETRYABLE_STATUS_CODES = {429, 503, 504}
-GEMINI_FALLBACK_MODEL = "gemini-flash-lite-latest"
+_CHAT_BUDGET_S = 50
+GEMINI_CHAT_MODEL = "gemini-flash-lite-latest"
+GEMINI_CHAT_RETRY_MODEL = GEMINI_MODEL
+_CHAT_MODELS = (GEMINI_CHAT_MODEL, GEMINI_CHAT_RETRY_MODEL)
 
 
 def _build_http_options(timeout_ms):
@@ -91,7 +97,7 @@ def _generate_content_with_retry(
     *,
     max_attempts=_MAX_ATTEMPTS,
     retryable_codes=_RETRYABLE_STATUS_CODES,
-    fallback_model=None,
+    models=None,
     attempt_timeout_s=None,
     budget_s=None,
 ):
@@ -101,7 +107,8 @@ def _generate_content_with_retry(
     504 timeouts). After the last attempt, re-raises the real error so the
     existing except blocks handle it exactly as before (fallback content).
 
-    - fallback_model: used on the LAST attempt only (e.g. a lighter model).
+    - models: model per attempt (the last entry is reused for later attempts);
+      defaults to GEMINI_MODEL for every attempt.
     - budget_s + attempt_timeout_s: a retry is only started if it could still
       finish inside the budget, which keeps the worst case under a caller's
       own deadline (e.g. the mobile app's 60s scan timeout).
@@ -111,7 +118,7 @@ def _generate_content_with_retry(
 
     for attempt in range(max_attempts):
         is_last_attempt = attempt == max_attempts - 1
-        model = fallback_model if (is_last_attempt and attempt > 0 and fallback_model) else GEMINI_MODEL
+        model = models[min(attempt, len(models) - 1)] if models else GEMINI_MODEL
         try:
             return client.models.generate_content(
                 model=model,
@@ -535,7 +542,9 @@ def generate_chat_answer(
             types.GenerateContentConfig(temperature=0.4),
             max_attempts=_CHAT_MAX_ATTEMPTS,
             retryable_codes=_CHAT_RETRYABLE_STATUS_CODES,
-            fallback_model=GEMINI_FALLBACK_MODEL,
+            models=_CHAT_MODELS,
+            attempt_timeout_s=_GEMINI_CHAT_TIMEOUT_MS / 1000,
+            budget_s=_CHAT_BUDGET_S,
         )
 
         text = (response.text or "").strip()
