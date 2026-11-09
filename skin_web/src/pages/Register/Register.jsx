@@ -3,8 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LanguageContext';
 import { jwtAPI } from '../../services/api';
-import '../Login/Login.css';
-import './Register.css';
+import AuthShell from '../../components/layout/AuthShell';
 
 export default function Register() {
     const [fullName, setFullName] = useState('');
@@ -66,86 +65,62 @@ export default function Register() {
     };
 
     return (
-        <div className="login-page theme-patient">
-
-            {/* ── Branded hero panel ───────────────────────────────────────────── */}
-            <div className="login-hero">
-                <div className="login-hero-top">
-                    <div className="login-hero-logo-icon">S</div>
-                    <span className="login-hero-brand-name">DermaScanAI</span>
+        <AuthShell>
+            <h1>{t('register.title')}</h1>
+            <p className="pt-auth-sub">{t('register.subtitle')}</p>
+            <form className="pt-auth-form" onSubmit={handleSubmit}>
+                <div className="pt-field">
+                    <label className="pt-label">{t('register.fullNameLabel')}</label>
+                    <input
+                        className="pt-input"
+                        type="text"
+                        placeholder="Jane Doe"
+                        value={fullName}
+                        onChange={e => setFullName(e.target.value)}
+                        autoFocus
+                    />
                 </div>
-
-                <div className="login-hero-content">
-                    <h1 className="login-hero-title">{t('register.heroTitle')}</h1>
-                    <p className="login-hero-sub">{t('register.heroSub')}</p>
+                <div className="pt-field">
+                    <label className="pt-label">
+                        {t('register.usernameLabel')}
+                        <span className="pt-auth-optional"> ({t('register.usernameOptional')})</span>
+                    </label>
+                    <input
+                        className="pt-input"
+                        type="text"
+                        placeholder="janedoe"
+                        value={username}
+                        onChange={e => setUsername(e.target.value)}
+                    />
                 </div>
-
-                <div className="login-hero-footer">DermaScanAI &copy; {new Date().getFullYear()}</div>
-            </div>
-
-            {/* ── Form panel ───────────────────────────────────────────────────── */}
-            <div className="login-form-panel">
-                <div className="login-card">
-                    <div className="login-card-header">
-                        <h2 className="login-card-title">{t('register.title')}</h2>
-                        <p className="login-card-sub">{t('register.subtitle')}</p>
-                    </div>
-                    <form className="login-form" onSubmit={handleSubmit}>
-                        <div className="login-field">
-                            <label className="login-label">{t('register.fullNameLabel')}</label>
-                            <input
-                                className="login-input"
-                                type="text"
-                                placeholder="Jane Doe"
-                                value={fullName}
-                                onChange={e => setFullName(e.target.value)}
-                                autoFocus
-                            />
-                        </div>
-                        <div className="login-field">
-                            <label className="login-label">
-                                {t('register.usernameLabel')}
-                                <span className="register-optional"> ({t('register.usernameOptional')})</span>
-                            </label>
-                            <input
-                                className="login-input"
-                                type="text"
-                                placeholder="janedoe"
-                                value={username}
-                                onChange={e => setUsername(e.target.value)}
-                            />
-                        </div>
-                        <div className="login-field">
-                            <label className="login-label">{t('register.emailLabel')}</label>
-                            <input
-                                className="login-input"
-                                type="email"
-                                placeholder="you@example.com"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                            />
-                        </div>
-                        <div className="login-field">
-                            <label className="login-label">{t('register.passwordLabel')}</label>
-                            <input
-                                className="login-input"
-                                type="password"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                            />
-                        </div>
-                        {error && <div className="login-error">{error}</div>}
-                        <button className="login-btn" type="submit" disabled={loading}>
-                            {loading ? t('register.signingUp') : t('register.signUpBtn')}
-                        </button>
-                        <div className="login-register-prompt">
-                            {t('register.haveAccount')} <Link to="/login" className="login-register-link">{t('register.signInLink')}</Link>
-                        </div>
-                    </form>
+                <div className="pt-field">
+                    <label className="pt-label">{t('register.emailLabel')}</label>
+                    <input
+                        className="pt-input"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                    />
                 </div>
-            </div>
-
-        </div>
+                <div className="pt-field">
+                    <label className="pt-label">{t('register.passwordLabel')}</label>
+                    <input
+                        className="pt-input"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                    />
+                </div>
+                {error && <div className="pt-alert pt-alert--error">{error}</div>}
+                <button className="pt-btn pt-btn--block" type="submit" disabled={loading}>
+                    {loading ? t('register.signingUp') : t('register.signUpBtn')}
+                </button>
+                <div className="pt-auth-foot">
+                    {t('register.haveAccount')} <Link to="/login" className="pt-link">{t('register.signInLink')}</Link>
+                </div>
+            </form>
+        </AuthShell>
     );
 }

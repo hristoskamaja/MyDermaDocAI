@@ -1,93 +1,91 @@
-/* ── Patient Layout — top-nav web shell (cream & brown theme) ────────────── */
+/* ── Patient Layout — top-nav web shell (see styles/patient-theme.css) ───────── */
 .patient-layout {
     min-height: 100vh;
     background: var(--bg);
+    color: var(--text);
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
 }
 
 .patient-topbar {
-    background: var(--surface);
+    background: var(--bg);
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 50;
 }
 .patient-topbar-inner {
-    max-width: 1080px;
+    max-width: 1120px;
     margin: 0 auto;
     height: var(--topbar-h);
     display: flex;
     align-items: center;
-    gap: 24px;
-    padding: 0 32px;
+    gap: var(--space-5);
+    padding: 0 var(--space-5);
 }
 
 .patient-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .patient-brand-icon {
-    width: 30px; height: 30px;
+    border-radius: 50%;
     background: var(--primary);
-    color: #fff;
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 800;
+    display: inline-flex; align-items: center; justify-content: center;
 }
-.patient-brand-name { font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: -0.2px; }
+.patient-brand-dot { width: 38%; height: 38%; border-radius: 50%; background: var(--primary-soft); }
+.patient-brand-name {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+}
+.patient-brand-name span { color: var(--primary); }
 
-.patient-nav {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex: 1;
-}
+.patient-nav { display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1; }
 .patient-nav-link {
-    display: flex; align-items: center; gap: 7px;
-    padding: 8px 14px;
-    border-radius: var(--radius-sm);
-    font-size: 13.5px; font-weight: 600;
+    padding: 9px 16px;
+    border-radius: var(--radius-pill);
+    font-size: 14px; font-weight: 600;
     color: var(--text-muted);
     transition: background 0.15s, color 0.15s;
 }
-.patient-nav-link:hover { background: var(--surface2); color: var(--text); }
-.patient-nav-link--active { background: var(--primary-soft); color: var(--primary); }
+.patient-nav-link:hover { color: var(--text); }
+.patient-nav-link--active { background: var(--primary); color: var(--on-primary); }
+.patient-nav-link--active:hover { color: var(--on-primary); }
 
-.patient-topbar-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.patient-topbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.patient-toolbar { display: flex; align-items: center; gap: 8px; }
 
-.patient-lang-switch { display: flex; align-items: center; gap: 2px; background: var(--surface2); border-radius: 999px; padding: 3px; }
+.patient-lang-switch { display: flex; align-items: center; gap: 2px; background: var(--surface2); border-radius: var(--radius-pill); padding: 3px; }
 .patient-lang-btn {
-    padding: 5px 11px; border-radius: 999px; background: transparent;
-    font-size: 11.5px; font-weight: 700; color: var(--text-muted);
+    padding: 6px 12px; border-radius: var(--radius-pill); background: transparent;
+    font-size: 12px; font-weight: 700; color: var(--text-muted);
     transition: background 0.15s, color 0.15s;
 }
-.patient-lang-btn--active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
+.patient-lang-btn--active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+
+.patient-icon-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface2); color: var(--text);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s;
+}
+.patient-icon-btn:hover { background: var(--primary-soft); color: var(--primary); }
+
 .patient-avatar {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    background: var(--primary-soft);
-    color: var(--primary);
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--primary-soft); color: var(--primary);
     display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 800;
+    font-size: 14px; font-weight: 800;
 }
-.patient-logout-btn {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+
+.patient-main { flex: 1; padding: var(--space-6) var(--space-5) var(--space-7); }
+.patient-main-inner { max-width: 1120px; margin: 0 auto; }
+
+@media (max-width: 960px) {
+    .patient-topbar-inner { flex-wrap: wrap; height: auto; padding: 12px var(--space-4); gap: 10px 12px; }
+    .patient-nav { order: 3; flex-basis: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 2px; }
+    .patient-topbar-right { margin-left: auto; }
+    .patient-main { padding: var(--space-5) var(--space-4) var(--space-6); }
 }
-.patient-logout-btn:hover { background: var(--high-bg); color: var(--high); border-color: var(--high); }
-
-.patient-main { flex: 1; padding: 36px 32px 40px; }
-.patient-main-inner { max-width: 1080px; margin: 0 auto; }
-
-@media (max-width: 900px) {
-    .patient-topbar-inner { gap: 12px; padding: 0 20px; }
-    .patient-main { padding: 24px 20px 50px; }
+@media (max-width: 520px) {
     .patient-brand-name { display: none; }
-    .patient-nav-link span { display: none; }
-    .patient-nav-link { padding: 8px 10px; }
+    .patient-avatar { display: none; }
 }

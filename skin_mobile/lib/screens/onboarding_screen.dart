@@ -21,34 +21,19 @@ class OnboardingScreen extends StatelessWidget {
                 width: 96,
                 height: 96,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [c.primary, c.primaryDeep],
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: c.primary.withOpacity(0.35),
-                      blurRadius: 24,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
+                  color: c.primary,
+                  shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.document_scanner_rounded,
-                  color: Colors.white,
+                  color: c.onPrimary,
                   size: 46,
                 ),
               ),
               const SizedBox(height: 32),
               Text(
                 'DermaScanAI',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w800,
-                  color: c.text,
-                ),
+                style: AppTheme.display(c, size: 34),
               ),
               const SizedBox(height: 14),
               Text(

@@ -15,8 +15,14 @@ from .serializers import (
     LoginSerializer,
     ChangePasswordSerializer,
     ResetPasswordSerializer,
+    ResetPasswordConfirmSerializer,
     UserCreateSerializer,
     UserUpdateSerializer,
+)
+from jwt_auth.password_reset import (
+    GENERIC_REQUEST_MESSAGE,
+    confirm_reset,
+    send_reset_email,
 )
 
 
@@ -124,24 +130,37 @@ def change_password(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def reset_password(request):
+    """Step 1: emails a signed, expiring reset link. Always answers 200."""
     serializer = ResetPasswordSerializer(data=request.data)
 
     if serializer.is_valid():
-        email = serializer.validated_data["email"]
-        new_password = serializer.validated_data["new_password"]
+        send_reset_email(serializer.validated_data["email"])
+        return Response(
+            {"message": GENERIC_REQUEST_MESSAGE},
+            status=status.HTTP_200_OK
+        )
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def reset_password_confirm(request):
+    """Step 2: sets the new password if uid + token are valid."""
+    serializer = ResetPasswordConfirmSerializer(data=request.data)
+
+    if serializer.is_valid():
+        user, error = confirm_reset(
+            serializer.validated_data["uid"],
+            serializer.validated_data["token"],
+            serializer.validated_data["new_password"],
+        )
+
+        if error:
             return Response(
-                {
-                    "email": "User with this email does not exist."
-                },
-                status=status.HTTP_404_NOT_FOUND
+                {"detail": error},
+                status=status.HTTP_400_BAD_REQUEST
             )
-
-        user.set_password(new_password)
-        user.save()
 
         Token.objects.filter(user=user).delete()
 

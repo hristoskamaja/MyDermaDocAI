@@ -84,7 +84,7 @@ class _AnalysisChatSectionState extends State<AnalysisChatSection> {
       if (!mounted) return;
       setState(() {
         _sending = false;
-        _error = e.message;
+        _error = e.isTimeout ? context.tr('chat.timeout') : e.message;
       });
     } catch (e) {
       if (!mounted) return;
@@ -185,7 +185,7 @@ class _AnalysisChatSectionState extends State<AnalysisChatSection> {
               icon: const Icon(Icons.arrow_upward_rounded),
               style: IconButton.styleFrom(
                 backgroundColor: c.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: c.onPrimary,
                 padding: const EdgeInsets.all(14),
               ),
             ),
@@ -213,7 +213,7 @@ class _AnalysisChatSectionState extends State<AnalysisChatSection> {
         child: Text(
           message.content,
           style: TextStyle(
-            color: isUser ? Colors.white : c.text,
+            color: isUser ? c.onPrimary : c.text,
             fontSize: 13.5,
             height: 1.4,
           ),

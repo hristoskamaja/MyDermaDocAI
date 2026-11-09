@@ -1,3 +1,4 @@
+import '../widgets/track/save_to_tracking_card.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/locale_context.dart';
@@ -9,6 +10,7 @@ import '../services/api_config.dart';
 import '../services/condition_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/analysis_chat_section.dart';
+import '../widgets/locale_reload.dart';
 import 'scan/scan_result_view.dart';
 
 /// Detail view for a past scan, opened from History. Reuses the same
@@ -24,7 +26,7 @@ class AnalysisDetailScreen extends StatefulWidget {
   State<AnalysisDetailScreen> createState() => _AnalysisDetailScreenState();
 }
 
-class _AnalysisDetailScreenState extends State<AnalysisDetailScreen> {
+class _AnalysisDetailScreenState extends State<AnalysisDetailScreen> with LocaleReloadMixin {
   final _analysisService = AnalysisService();
   final _conditionService = ConditionService();
 
@@ -33,6 +35,11 @@ class _AnalysisDetailScreenState extends State<AnalysisDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _future = _load();
+  }
+
+  @override
+  void reloadForLocale() {
     _future = _load();
   }
 
@@ -56,7 +63,7 @@ class _AnalysisDetailScreenState extends State<AnalysisDetailScreen> {
       body: FutureBuilder<_DetailData>(
         future: _future,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
@@ -97,7 +104,11 @@ class _AnalysisDetailScreenState extends State<AnalysisDetailScreen> {
             treatmentOverview: detail.condition.treatmentOverview,
             recommendations: data.recommendations,
             isLowConfidence: detail.isLowConfidence,
-            trailing: AnalysisChatSection(analysisId: detail.id),
+            trailing: Column(children: [
+              SaveToTrackingCard(analysisId: detail.id),
+              const SizedBox(height: AppSpace.lg),
+              AnalysisChatSection(analysisId: detail.id),
+            ]),
           );
         },
       ),

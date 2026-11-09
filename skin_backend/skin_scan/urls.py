@@ -7,6 +7,7 @@ Project-level urls.py - same as leafscan/leafscan/urls.py.
 /api/              -> core.urls        (SkinCondition/Recommendation CRUD for the admin panel)
 /api/analyses/     -> analyses.urls    (scan-skin + analysis history)
 /api/              -> analytics.urls   (dashboard/statistics for the React admin panel)
+/api/tracking/     -> tracking.urls    (private per-user skin tracker)
 """
 
 from django.contrib import admin
@@ -27,6 +28,8 @@ urlpatterns = [
     path("api/analyses/", include("analyses.urls")),
 
     path("api/", include("analytics.urls")),
+
+    path("api/tracking/", include("tracking.urls")),
 ]
 
 if settings.DEBUG:

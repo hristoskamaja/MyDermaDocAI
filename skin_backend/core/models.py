@@ -141,14 +141,29 @@ class Recommendation(models.Model):
     # (unchanged, so existing rows stay valid), and name_mk/description_mk
     # are the Macedonian counterpart, now generated in the same Gemini call
     # (see analyses/services/gemini_service.py -> generate_recommendations_with_gemini).
+    #
+    # Richer format: `name` is the short title, `description` is "what to
+    # do", and what_to_avoid / when_to_see_doctor are the other two parts
+    # (each with a Macedonian counterpart). Older rows simply leave the two
+    # new parts empty, and the UIs hide a part that has no text.
     name = models.CharField(max_length=150)
     name_mk = models.CharField(max_length=150, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     description_mk = models.TextField(blank=True, null=True)
+    what_to_avoid = models.TextField(blank=True, null=True)
+    what_to_avoid_mk = models.TextField(blank=True, null=True)
+    when_to_see_doctor = models.TextField(blank=True, null=True)
+    when_to_see_doctor_mk = models.TextField(blank=True, null=True)
     type = models.CharField(
         max_length=20,
         choices=RecommendationType.choices,
     )
+
+    # True for the short built-in fallback text (or an incomplete Gemini
+    # answer) that is shown when generation fails. A condition whose
+    # recommendations are flagged like this is generated again on the next
+    # scan instead of being stuck with the short list forever.
+    is_fallback = models.BooleanField(default=False)
 
     class Meta:
         db_table = "recommendations"

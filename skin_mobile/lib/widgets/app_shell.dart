@@ -4,11 +4,12 @@ import '../screens/history_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/scan/scan_flow_screen.dart';
+import '../screens/track/track_screen.dart';
 import 'bottom_nav.dart';
 
-/// Wraps Home / History / Profile with the persistent bottom nav and
-/// handles nav state. The "Scan" nav item does not switch tabs — it
-/// pushes the scan capture flow directly, per spec.
+/// Wraps Home / Track / History / Profile with the persistent bottom nav and
+/// handles nav state. The "Scan" nav item does not switch tabs - it pushes
+/// the scan capture flow directly, per spec.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -19,10 +20,11 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _tabIndex = 0;
 
-  // Maps bottom-nav index -> tab page index (nav index 1 is "Scan" and
-  // is handled separately via push, so it has no corresponding page).
+  // Nav order: 0 Home, 1 Scan (push, no page), 2 Track, 3 History, 4 Profile.
+  // _pages skips Scan, so nav index n > 1 maps to page n - 1.
   final _pages = const [
     HomeScreen(),
+    TrackScreen(),
     HistoryScreen(),
     ProfileScreen(),
   ];

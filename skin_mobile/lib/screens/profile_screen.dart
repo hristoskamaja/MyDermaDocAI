@@ -99,10 +99,10 @@ class ProfileScreen extends StatelessWidget {
                           }
                         },
                   child: loading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2.2, color: context.colors.onPrimary),
                         )
                       : Text(context.tr('profile.save')),
                 ),
@@ -138,21 +138,13 @@ class ProfileScreen extends StatelessWidget {
                   width: 84,
                   height: 84,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [c.primary, c.primaryDeep],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: c.primarySoft,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Text(
                       user?.initials ?? '?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: AppTheme.display(c, size: 30).copyWith(color: c.primary),
                     ),
                   ),
                 ),
@@ -208,7 +200,7 @@ class ProfileScreen extends StatelessWidget {
               },
               icon: Icon(Icons.logout_rounded, color: c.high),
               label: Text(context.tr('profile.logout'), style: TextStyle(color: c.high)),
-              style: OutlinedButton.styleFrom(side: BorderSide(color: c.high.withOpacity(0.4))),
+              style: OutlinedButton.styleFrom(side: BorderSide(color: c.high.withValues(alpha: 0.4))),
             ),
           ),
         ],
@@ -251,7 +243,7 @@ class ProfileScreen extends StatelessWidget {
     return ListTile(
       leading: Icon(icon, color: c.primary),
       title: Text(title, style: TextStyle(color: c.text, fontWeight: FontWeight.w600)),
-      trailing: Switch(value: value, onChanged: onChanged, activeColor: c.primary),
+      trailing: Switch(value: value, onChanged: onChanged, activeThumbColor: c.primary),
     );
   }
 

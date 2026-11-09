@@ -5,6 +5,7 @@ import '../l10n/locale_context.dart';
 import '../models/analysis.dart';
 import '../services/analysis_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/locale_reload.dart';
 import '../widgets/page_hero_header.dart';
 import '../widgets/severity_pill.dart';
 import 'analysis_detail_screen.dart';
@@ -16,7 +17,7 @@ class HistoryScreen extends StatefulWidget {
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class _HistoryScreenState extends State<HistoryScreen> with LocaleReloadMixin {
   final _analysisService = AnalysisService();
   late Future<List<AnalysisListItem>> _future;
 
@@ -30,6 +31,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final all = await _analysisService.getMyAnalyses();
     all.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return all;
+  }
+
+  @override
+  void reloadForLocale() {
+    _future = _load();
   }
 
   Future<void> _refresh() async {
@@ -60,7 +66,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: FutureBuilder<List<AnalysisListItem>>(
           future: _future,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
@@ -125,7 +131,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: c.surface,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                       border: Border.all(color: c.border),
                     ),
                     child: Row(

@@ -62,6 +62,11 @@ class JwtChangePasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, min_length=6)
 
 
-class JwtResetPasswordSerializer(serializers.Serializer):
+class JwtResetPasswordRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+
+class JwtResetPasswordConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
     new_password = serializers.CharField(write_only=True, min_length=6)

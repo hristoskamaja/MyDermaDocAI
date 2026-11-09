@@ -1,19 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ImageIcon, Info, ArrowUp, RefreshCw, History as HistoryIcon, Contact, Download } from 'lucide-react';
+import { ImageIcon, Info, ArrowUp, RefreshCw, History as HistoryIcon, Contact, Download, Sprout } from 'lucide-react';
 import { useLang } from '../../context/LanguageContext';
-import { analysesAPI, conditionsAPI } from '../../services/api';
-import PageHeroWave from '../../components/decor/PageHeroWave';
+import { analysesAPI, conditionsAPI, trackingAPI } from '../../services/api';
+import { SCAN_AREAS, apiErrorText } from '../Track/trackUtils';
 import './ScanResult.css';
 
-// ── Severity badge (mirrors the admin Conditions page visual language) ─────
-// `light` renders a translucent-white pill for use on the dark hero band,
-// instead of the color-coded pill used everywhere else in the app.
-function SeverityBadge({ severity, t, light }) {
-    if (light) {
-        const labels = { LOW: t('conditions.low'), MEDIUM: t('conditions.medium'), HIGH: t('conditions.high') };
-        return <span className="sev-pill sev-pill--onDark">{labels[severity] || severity}</span>;
-    }
+// ── Severity badge ───────────────────────────────────────────────────────────
+function SeverityBadge({ severity, t }) {
     const cls = { LOW: 'sev-pill--low', MEDIUM: 'sev-pill--medium', HIGH: 'sev-pill--high' };
     const labels = { LOW: t('conditions.low'), MEDIUM: t('conditions.medium'), HIGH: t('conditions.high') };
     return <span className={`sev-pill ${cls[severity] || ''}`}>{labels[severity] || severity}</span>;
@@ -24,6 +18,58 @@ const REC_GROUPS = [
     { type: 'SELF_CARE',       labelKey: 'result.selfCare',    cls: 'rec-section--self'     },
     { type: 'LIFESTYLE',       labelKey: 'result.lifestyle',   cls: 'rec-section--lifestyle' },
 ];
+
+// ── Save to tracking ─────────────────────────────────────────────────────────
+// Links this scan to the user's tracker timeline, optionally to a body area so
+// the same spot can be compared over time.
+function SaveToTracking({ analysisId, t }) {
+    const [area, setArea] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSave = async () => {
+        setSaving(true);
+        setError('');
+        try {
+            await trackingAPI.saveScan(analysisId, area ? { body_area: area } : {});
+            setSaved(true);
+        } catch (err) {
+            setError(apiErrorText(err, t('track.saveScan.error')));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (saved) {
+        return (
+            <div className="pt-alert pt-alert--success save-tracking-done">
+                <span>{t('track.saveScan.saved')}</span>
+                <Link to="/track/timeline" className="pt-link">{t('track.saveScan.viewTimeline')}</Link>
+            </div>
+        );
+    }
+
+    return (
+        <div className="pt-card save-tracking">
+            <label className="pt-field save-tracking-field">
+                <span className="pt-label">{t('track.saveScan.area')}</span>
+                <select className="pt-input" value={area} onChange={(e) => setArea(e.target.value)}>
+                    <option value="">{t('track.saveScan.areaNone')}</option>
+                    {SCAN_AREAS.map((key) => (
+                        <option key={key} value={key}>
+                            {t(`track.areas.${key}`) !== `track.areas.${key}` ? t(`track.areas.${key}`) : t(`track.scanAreas.${key}`)}
+                        </option>
+                    ))}
+                </select>
+            </label>
+            <button type="button" className="pt-btn" onClick={handleSave} disabled={saving}>
+                <Sprout size={15} strokeWidth={1.8} /> {saving ? t('track.saveScan.saving') : t('track.saveScan.button')}
+            </button>
+            {error && <div className="pt-alert pt-alert--error">{error}</div>}
+        </div>
+    );
+}
 
 // ── Chat Q&A section ─────────────────────────────────────────────────────────
 function AnalysisChat({ analysisId, t }) {
@@ -131,7 +177,7 @@ function AnalysisChat({ analysisId, t }) {
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function ScanResult() {
     const { id } = useParams();
-    const { t } = useLang();
+    const { t, lang } = useLang();
     const navigate = useNavigate();
 
     const [analysis, setAnalysis] = useState(null);
@@ -141,10 +187,13 @@ export default function ScanResult() {
     const [downloadingPdf, setDownloadingPdf] = useState(false);
     const [pdfError, setPdfError] = useState('');
 
+    // Refetches when the analysis id OR the UI language changes: the condition
+    // text and recommendations come back localized. On a language change the
+    // current result stays on screen (no spinner) until the new data arrives.
+    // The chat history (AnalysisChat) is intentionally not language-dependent.
     useEffect(() => {
         let cancelled = false;
         const load = async () => {
-            setLoading(true);
             setError('');
             try {
                 const res = await analysesAPI.getById(id);
@@ -170,7 +219,7 @@ export default function ScanResult() {
         };
         load();
         return () => { cancelled = true; };
-    }, [id]);
+    }, [id, lang]);
 
     // Downloaded as a blob (not a plain <a href>) because /analyses/:id/pdf/
     // is a protected endpoint - the request needs the same Authorization
@@ -199,13 +248,13 @@ export default function ScanResult() {
         }
     };
 
-    if (loading) return <div className="scan-result-loading">{t('common.loading')}</div>;
+    if (loading) return <div className="pt-loading">{t('common.loading')}</div>;
 
     if (error || !analysis) {
         return (
             <div className="scan-result-error">
                 <p>{error || 'Analysis not found.'}</p>
-                <Link to="/scan" className="btn btn--primary">{t('result.scanAgain')}</Link>
+                <Link to="/scan" className="pt-btn">{t('result.scanAgain')}</Link>
             </div>
         );
     }
@@ -219,20 +268,16 @@ export default function ScanResult() {
     })).filter(g => g.items.length > 0);
 
     return (
-        <div className="scan-result-page">
-            <div className="page-hero-band">
-                <PageHeroWave />
-            </div>
-
+        <div className="scan-result-page pt-narrow">
             <div className="result-title-block">
                 <div className="result-title-row">
                     <SeverityBadge severity={condition?.severity} t={t} />
                     {scanDate && <span className="result-date">{scanDate}</span>}
                 </div>
-                <h1 className="result-title">{condition?.name}</h1>
+                <h1 className="pt-title">{condition?.name}</h1>
             </div>
 
-            <div className="result-card">
+            <div className="pt-card result-card">
                 <div className="result-image-wrap">
                     {analysis.image
                         ? <img src={analysis.image} alt={condition?.name} className="result-image" />
@@ -250,7 +295,7 @@ export default function ScanResult() {
                 </div>
 
                 {analysis.is_low_confidence && (
-                    <div className="result-low-conf-banner">{t('result.lowConfidenceWarn')}</div>
+                    <div className="pt-alert pt-alert--warn">{t('result.lowConfidenceWarn')}</div>
                 )}
 
                 {condition?.description && (
@@ -276,14 +321,32 @@ export default function ScanResult() {
             </div>
 
             {groupedRecs.length > 0 && (
-                <div className="result-card result-recs">
+                <div className="pt-card result-card result-recs">
                     {groupedRecs.map(g => (
                         <div key={g.type} className={`rec-section ${g.cls}`}>
                             <div className="rec-section-title">{t(g.labelKey)}</div>
                             {g.items.map(r => (
                                 <div key={r.id} className="rec-card">
                                     <div className="rec-card-name">{r.name}</div>
-                                    {r.description && <div className="rec-card-desc">{r.description}</div>}
+                                    {/* Older recommendations only have the first part; the rest are hidden when empty. */}
+                                    {r.description && (
+                                        <div className="rec-card-part">
+                                            <span className="rec-card-label">{t('result.whatToDo')}</span>
+                                            <span className="rec-card-desc">{r.description}</span>
+                                        </div>
+                                    )}
+                                    {r.what_to_avoid && (
+                                        <div className="rec-card-part">
+                                            <span className="rec-card-label">{t('result.whatToAvoid')}</span>
+                                            <span className="rec-card-desc">{r.what_to_avoid}</span>
+                                        </div>
+                                    )}
+                                    {r.when_to_see_doctor && (
+                                        <div className="rec-card-part">
+                                            <span className="rec-card-label">{t('result.whenToSeeDoctor')}</span>
+                                            <span className="rec-card-desc">{r.when_to_see_doctor}</span>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                             {g.type === 'MEDICAL_CONSULT' && (
@@ -297,26 +360,28 @@ export default function ScanResult() {
                 </div>
             )}
 
-            <div className="result-disclaimer">
+            <div className="pt-note">
                 <Info size={18} strokeWidth={1.8} />
                 <span>{t('disclaimer.resultText')}</span>
             </div>
 
             <div className="result-actions">
-                <button className="btn btn--primary" onClick={() => navigate('/scan')}>
+                <button className="pt-btn" onClick={() => navigate('/scan')}>
                     <RefreshCw size={15} strokeWidth={1.8} /> {t('result.scanAgain')}
                 </button>
-                <button className="btn btn--secondary" onClick={handleDownloadPdf} disabled={downloadingPdf}>
+                <button className="pt-btn pt-btn--ghost" onClick={handleDownloadPdf} disabled={downloadingPdf}>
                     <Download size={15} strokeWidth={1.8} />
                     {downloadingPdf ? t('result.downloadingPdf') : t('result.downloadPdf')}
                 </button>
-                <button className="btn btn--secondary" onClick={() => navigate('/history')}>
+                <button className="pt-btn pt-btn--ghost" onClick={() => navigate('/history')}>
                     <HistoryIcon size={15} strokeWidth={1.8} /> {t('result.backToHistory')}
                 </button>
             </div>
-            {pdfError && <div className="result-low-conf-banner">{pdfError}</div>}
+            {pdfError && <div className="pt-alert pt-alert--warn">{pdfError}</div>}
 
-            <div className="result-card">
+            <SaveToTracking analysisId={analysis.id} t={t} />
+
+            <div className="pt-card result-card">
                 <AnalysisChat analysisId={analysis.id} t={t} />
             </div>
         </div>

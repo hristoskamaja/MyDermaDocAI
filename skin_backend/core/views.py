@@ -1,3 +1,4 @@
+import logging
 import threading
 
 from django.db import close_old_connections
@@ -18,6 +19,8 @@ from .serializers import (
 )
 from .services.geo import city_center, haversine_km
 from .services.translation import fill_missing_translations
+
+logger = logging.getLogger(__name__)
 
 # The three fields that get an auto-generated English counterpart - see
 # core/services/translation.py. Kept as one tuple so the "did the source
@@ -84,8 +87,10 @@ def sync_condition_translations_in_background(condition_id, previous_values=None
             sync_condition_translations(condition, previous_values, protected_fields)
         except SkinCondition.DoesNotExist:
             pass
-        except Exception as error:
-            print(f"Background translation sync failed: {error}")
+        except Exception:
+            logger.exception(
+                "Background translation sync failed for condition id=%s", condition_id
+            )
         finally:
             close_old_connections()
 

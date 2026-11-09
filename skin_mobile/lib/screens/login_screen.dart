@@ -62,11 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 Text(
                   context.tr('auth.loginTitle'),
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: c.text,
-                  ),
+                  style: AppTheme.display(c, size: 30),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -125,12 +121,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: _loading ? null : _submit,
                     child: _loading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.4,
-                              color: Colors.white,
+                              color: context.colors.onPrimary,
                             ),
                           )
                         : Text(context.tr('auth.signIn')),

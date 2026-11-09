@@ -10,3 +10,13 @@ import '../providers/locale_provider.dart';
 extension AppLocaleContext on BuildContext {
   String tr(String key) => watch<LocaleProvider>().t(key);
 }
+
+/// Replaces `{name}` placeholders in a translated string, e.g.
+/// `context.trp('track.hub.hoursShort', {'n': 7})`.
+extension AppLocaleParams on BuildContext {
+  String trp(String key, Map<String, Object> vars) {
+    var text = tr(key);
+    vars.forEach((name, value) => text = text.replaceAll('{$name}', '$value'));
+    return text;
+  }
+}

@@ -15,6 +15,23 @@ class AuthProvider extends ChangeNotifier {
   AppUser? currentUser;
   String? lastError;
 
+  /// Set by the app root to send the user back to the login screen when the
+  /// session can no longer be refreshed.
+  VoidCallback? onForcedLogout;
+
+  AuthProvider() {
+    ApiClient.onSessionExpired = _handleSessionExpired;
+  }
+
+  void _handleSessionExpired() {
+    // During bootstrap (status unknown) the start screen routes by itself.
+    if (status != AuthStatus.authenticated) return;
+    currentUser = null;
+    status = AuthStatus.unauthenticated;
+    notifyListeners();
+    onForcedLogout?.call();
+  }
+
   bool get isAuthenticated => status == AuthStatus.authenticated;
 
   /// Called on app start to decide whether to route to Home or
@@ -30,8 +47,9 @@ class AuthProvider extends ChangeNotifier {
       currentUser = await _authService.me();
       status = AuthStatus.authenticated;
     } catch (_) {
-      // Stored token invalid/expired and no refresh flow triggered here —
-      // treat as logged out.
+      // ApiClient already tried to refresh the access token; if /me/ still
+      // fails the session is gone (or the server is unreachable) — treat as
+      // logged out.
       await TokenStorage.clear();
       status = AuthStatus.unauthenticated;
     }

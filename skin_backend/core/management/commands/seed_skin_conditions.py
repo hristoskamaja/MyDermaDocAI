@@ -166,8 +166,149 @@ CONDITIONS = [
 ]
 
 
+# Hand-written English text for the same 8 conditions, so English never
+# depends on a Gemini translation (quota, errors, missing key). Same
+# educational, non-prescriptive tone as the Macedonian text above.
+CONDITIONS_EN = {
+    "melanoma": {
+        "description_en": (
+            "A malignant lesion of the skin's pigment cells. It needs an urgent "
+            "evaluation by a dermatologist."
+        ),
+        "symptoms_en": (
+            "A mole or spot that is asymmetrical, has irregular or blurred "
+            "borders, has several colors in the same lesion (brown, black, pink, "
+            "blue), is larger than 6 mm, and/or changes in size, shape or color "
+            "over time. It may itch, bleed or not heal."
+        ),
+        "treatment_overview_en": (
+            "Dermatologists most often remove the lesion surgically (excision), "
+            "sometimes with a check of the nearest lymph nodes. In more advanced "
+            "cases, treatment may include immunotherapy or targeted therapy. The "
+            "exact approach depends on depth and stage and is decided by a "
+            "dermatologist or oncologist after a biopsy."
+        ),
+    },
+    "basal_cell_carcinoma": {
+        "description_en": (
+            "The most common type of skin cancer. It grows slowly, but it needs "
+            "a medical diagnosis and treatment."
+        ),
+        "symptoms_en": (
+            "A shiny or waxy raised bump, a flat scar-like patch that is brown "
+            "or flesh-colored, or a sore that bleeds, crusts, heals and then "
+            "returns. It is most common on sun-exposed areas (face, ears, neck)."
+        ),
+        "treatment_overview_en": (
+            "It is usually treated with surgical removal (including Mohs surgery, "
+            "which carefully preserves healthy tissue). Smaller lesions are "
+            "sometimes treated with cryotherapy, topical therapy or radiotherapy. "
+            "The choice is made by a dermatologist based on size and location."
+        ),
+    },
+    "squamous_cell_carcinoma": {
+        "description_en": (
+            "A malignant lesion of the skin's squamous cells. It needs a medical "
+            "evaluation."
+        ),
+        "symptoms_en": (
+            "A firm reddish bump, a flat lesion with a scaly or crusted surface, "
+            "or a sore or ulcer that does not heal for months. It can also look "
+            "like a wart. It is most common on sun-exposed areas."
+        ),
+        "treatment_overview_en": (
+            "The most common approach is surgical removal (excision or Mohs "
+            "surgery); for larger or hard-to-reach lesions radiotherapy may be "
+            "recommended. The final decision is made by a dermatologist or "
+            "oncologist after assessing the stage."
+        ),
+    },
+    "actinic_keratosis": {
+        "description_en": (
+            "A precancerous change caused by long-term sun exposure."
+        ),
+        "symptoms_en": (
+            "A rough, dry, scaly patch (usually under 2 cm), pink, reddish or "
+            "brown, on sun-exposed skin (face, scalp, hands). It may itch or "
+            "sting, and is sometimes easier to feel than to see."
+        ),
+        "treatment_overview_en": (
+            "Dermatologists commonly use cryotherapy (freezing), topical therapy "
+            "or photodynamic therapy, depending on the number and location of the "
+            "lesions. Without treatment, a small percentage can progress to "
+            "squamous cell carcinoma, which is why a check-up is recommended."
+        ),
+    },
+    "seborrheic_keratosis": {
+        "description_en": (
+            "A benign, wart-like skin growth, common in older adults."
+        ),
+        "symptoms_en": (
+            "A waxy, \"stuck-on\" spot with a sharp edge, brown, black or beige, "
+            "round or oval, with a slightly rough or warty surface. It grows "
+            "slowly and usually does not hurt."
+        ),
+        "treatment_overview_en": (
+            "Because it is benign, treatment is usually not needed. If the lesion "
+            "becomes irritated or itchy, or you want it removed for cosmetic "
+            "reasons, a dermatologist can remove it with cryotherapy, curettage "
+            "or laser."
+        ),
+    },
+    "nevus": {
+        "description_en": (
+            "An ordinary benign mole. Watch for changes in size, color or shape."
+        ),
+        "symptoms_en": (
+            "A small, evenly colored spot (brown, black or flesh-colored) with a "
+            "clearly defined border and a stable appearance over time. An "
+            "ordinary mole does not hurt or bleed."
+        ),
+        "treatment_overview_en": (
+            "Ordinary moles do not need treatment. Removal is considered only if "
+            "the mole shows changes (asymmetry, irregular border, change in "
+            "color or size) or by personal preference, always after a "
+            "dermatologist's assessment."
+        ),
+    },
+    "dermatofibroma": {
+        "description_en": (
+            "A benign fibrous skin nodule that is usually harmless."
+        ),
+        "symptoms_en": (
+            "A small, firm bump (usually on the legs), pink, brown or reddish. "
+            "It typically dimples inward when pinched from the sides (the "
+            "\"dimple sign\"). It may itch slightly but usually does not hurt."
+        ),
+        "treatment_overview_en": (
+            "It usually needs no treatment. Surgical removal is considered only "
+            "if the lesion is bothersome, itches constantly or you want it "
+            "removed, after a dermatologist's assessment."
+        ),
+    },
+    "vascular_lesion": {
+        "description_en": (
+            "A benign change related to the blood vessels in the skin."
+        ),
+        "symptoms_en": (
+            "A red or dark red/purple spot caused by blood vessels in the skin, "
+            "flat or slightly raised. In some types the color fades briefly "
+            "under pressure."
+        ),
+        "treatment_overview_en": (
+            "Treatment is usually not needed. If the lesion causes functional or "
+            "cosmetic concerns, a dermatologist may suggest laser therapy; the "
+            "approach depends on the type and depth of the vessels."
+        ),
+    },
+}
+
+
 class Command(BaseCommand):
-    help = "Seed-ира ги 8-те SkinCondition записи што се совпаѓаат со тренинг notebook-от."
+    help = (
+        "Seeds the 8 SkinCondition records matching the training notebook, "
+        "with both Macedonian and English text."
+    )
 
     def handle(self, *args, **options):
         created_count = 0
@@ -183,6 +324,7 @@ class Command(BaseCommand):
                     "description": item["description"],
                     "symptoms": item["symptoms"],
                     "treatment_overview": item["treatment_overview"],
+                    **CONDITIONS_EN[item["key"]],
                 },
             )
             if created:

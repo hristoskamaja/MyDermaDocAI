@@ -351,15 +351,39 @@ class _ScanResultViewState extends State<ScanResultView> {
                   r.name,
                   style: TextStyle(color: c.text, fontWeight: FontWeight.w700, fontSize: 13.5),
                 ),
-                if (r.description.trim().isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    r.description,
-                    style: TextStyle(color: c.textMuted, fontSize: 12.5, height: 1.4),
-                  ),
-                ],
+                _recPart(c, context.tr('result.whatToDo'), r.description),
+                _recPart(c, context.tr('result.whatToAvoid'), r.whatToAvoid),
+                _recPart(c, context.tr('result.whenToSeeDoctor'), r.whenToSeeDoctor),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// One labeled paragraph of a recommendation; hidden when empty (older
+  /// recommendations only have "what to do").
+  Widget _recPart(AppColors c, String label, String? text) {
+    if (text == null || text.trim().isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              color: c.textLight,
+              fontWeight: FontWeight.w800,
+              fontSize: 10.5,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            text.trim(),
+            style: TextStyle(color: c.textMuted, fontSize: 12.5, height: 1.4),
           ),
         ],
       ),

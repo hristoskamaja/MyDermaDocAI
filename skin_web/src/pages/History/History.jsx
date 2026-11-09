@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { ImageIcon, ChevronRight, Camera } from 'lucide-react';
 import { useLang } from '../../context/LanguageContext';
 import { analysesAPI } from '../../services/api';
-import PageHeroWave from '../../components/decor/PageHeroWave';
 import './History.css';
 
 function SeverityBadge({ severity, t }) {
@@ -13,60 +12,56 @@ function SeverityBadge({ severity, t }) {
 }
 
 export default function History() {
-    const { t } = useLang();
+    const { t, lang } = useLang();
     const [analyses, setAnalyses] = useState([]);
     const [loading, setLoading]   = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
+    // Refetches on language change (condition names are localized). The old
+    // list stays visible, slightly dimmed, until the new one arrives.
     useEffect(() => {
+        let cancelled = false;
         const load = async () => {
+            setRefreshing(true);
             try {
                 const res = await analysesAPI.getMy();
-                setAnalyses(res.data || []);
+                if (!cancelled) setAnalyses(res.data || []);
             } catch (err) {
                 console.error('Failed to load history:', err);
             } finally {
-                setLoading(false);
+                if (!cancelled) { setLoading(false); setRefreshing(false); }
             }
         };
         load();
-    }, []);
+        return () => { cancelled = true; };
+    }, [lang]);
 
-    if (loading) return <div className="hist-loading">{t('common.loading')}</div>;
+    if (loading) return <div className="pt-loading">{t('common.loading')}</div>;
 
     return (
         <div className="history-page">
-            <div className="page-hero-band">
-                <PageHeroWave />
-                <div className="page-hero-inner">
-                    <div className="page-header">
-                        <div>
-                            <h1 className="page-title">{t('history.title')}</h1>
-                            <p className="page-subtitle">{t('history.subtitle')}</p>
-                        </div>
-                    </div>
-                </div>
+            <div className="pt-page-header">
+                <h1 className="pt-title">{t('history.title')}</h1>
+                <p className="pt-subtitle">{t('history.subtitle')}</p>
             </div>
 
             {analyses.length === 0 ? (
-                <div className="hist-empty">
-                    <div className="hist-empty-icon"><Camera size={24} strokeWidth={1.6} /></div>
-                    <span className="hist-empty-title">{t('history.empty')}</span>
-                    <span className="hist-empty-sub">{t('history.emptySub')}</span>
-                    <Link to="/scan" className="btn btn--primary" style={{ marginTop: 10 }}>
+                <div className="pt-card hist-empty">
+                    <span className="pt-icon-chip"><Camera size={20} strokeWidth={1.7} /></span>
+                    <span className="pt-h2">{t('history.empty')}</span>
+                    <span className="pt-subtitle" style={{ marginTop: 0 }}>{t('history.emptySub')}</span>
+                    <Link to="/scan" className="pt-btn" style={{ marginTop: 8 }}>
                         <Camera size={15} strokeWidth={1.8} /> {t('history.newScanBtn')}
                     </Link>
                 </div>
             ) : (
-                <div className="hist-list">
+                <div className={`hist-list${refreshing ? ' pt-refreshing' : ''}`}>
                     {analyses.map(a => {
                         const dateStr = a.created_at ? a.created_at.slice(0, 10) : '—';
                         const confidencePct = a.confidence != null ? `${(a.confidence * 100).toFixed(0)}%` : '—';
-                        const sevClass = { LOW: 'hist-item--low', MEDIUM: 'hist-item--medium', HIGH: 'hist-item--high' }[a.severity] || '';
                         return (
-                            <Link key={a.id} to={`/scan/${a.id}`} className={`hist-item ${sevClass}`}>
-                                <div className="hist-item-thumb">
-                                    <ImageIcon size={16} strokeWidth={1.6} />
-                                </div>
+                            <Link key={a.id} to={`/scan/${a.id}`} className="pt-card hist-item">
+                                <span className="pt-icon-chip"><ImageIcon size={17} strokeWidth={1.7} /></span>
                                 <div className="hist-item-main">
                                     <div className="hist-item-top">
                                         <span className="hist-item-name">{a.condition_name || '—'}</span>

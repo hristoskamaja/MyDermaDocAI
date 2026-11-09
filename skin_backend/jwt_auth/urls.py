@@ -7,7 +7,8 @@ from .views import (
     JwtLogoutView,
     JwtMeView,
     JwtChangePasswordView,
-    JwtResetPasswordView,
+    JwtResetPasswordRequestView,
+    JwtResetPasswordConfirmView,
 )
 
 urlpatterns = [
@@ -17,5 +18,6 @@ urlpatterns = [
     path("logout/", JwtLogoutView.as_view(), name="jwt_logout"),
     path("me/", JwtMeView.as_view(), name="jwt_me"),
     path("change-password/", JwtChangePasswordView.as_view(), name="jwt_change_password"),
-    path("reset-password/", JwtResetPasswordView.as_view(), name="jwt_reset_password"),
+    path("reset-password/request/", JwtResetPasswordRequestView.as_view(), name="jwt_reset_password_request"),
+    path("reset-password/confirm/", JwtResetPasswordConfirmView.as_view(), name="jwt_reset_password_confirm"),
 ]

@@ -1,3 +1,4 @@
+import '../../widgets/track/save_to_tracking_card.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -148,7 +149,11 @@ class _ScanFlowScreenState extends State<ScanFlowScreen> {
           recommendations: _recommendations,
           primaryActionLabel: context.tr('scan.scanAgain'),
           onPrimaryAction: _reset,
-          trailing: AnalysisChatSection(analysisId: analysis.id),
+          trailing: Column(children: [
+            SaveToTrackingCard(analysisId: analysis.id),
+            const SizedBox(height: AppSpace.lg),
+            AnalysisChatSection(analysisId: analysis.id),
+          ]),
         );
       case _ScanStage.uncertain:
         final prediction = _scanResponse!.prediction;

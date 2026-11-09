@@ -3,7 +3,29 @@
 AI-assisted skin condition scanning app (Django backend + React web + Flutter mobile).
 
 **Features**: photo-based skin condition scan (local AI model), AI chat about results,
-PDF export, dermatologist finder (GPS/city-based), bilingual EN/MK, admin panel.
+richer recommendations (what to do / what to avoid / when to see a doctor), PDF export,
+dermatologist finder (GPS/city-based), bilingual EN/MK, light/dark theme, admin panel,
+and a personal **skin tracker** (see below).
+
+**Skin tracker** (web "Track" section and the mobile "Track" tab):
+
+- **Daily check-in** - skin rating, breakout level and areas (face map), optional private
+  photo, food and drink, sleep, stress, optional cycle phase, and a morning/evening routine
+  checklist. One check-in per day, editable the same day.
+- **Hub** - today's status, streak (current and best), "This week" strip, category tiles.
+- **Timeline** - breakouts over 30/90 days with sleep, stress and cycle overlays, a
+  before/after photo compare, and the scans you saved with "Save to tracking".
+- **AI insights** - patterns found in your own check-ins (plain statistics, not a black
+  box), a correlation explorer for sleep / stress / acne, and "Ask AI about my patterns".
+  Insights need at least 7 logged days. The confidence score is a heuristic based on sample
+  size and effect size, **not a probability**, and the wording describes patterns, never
+  causes or medical advice.
+- **Routine** - your skincare shelf (cleanse / treat / hydrate / protect, AM / PM).
+- **Weekly report** - this week vs last week, shareable (text, or an image).
+- **Reminders** - settings are saved to your account; notifications are coming soon.
+- **Privacy** - tracking data is private to the user. Photos are stored outside the public
+  media folder and are only served to their owner. Cycle tracking is opt-in. "Delete all my
+  tracking data" is in Track > Reminders.
 
 **Not a medical diagnosis** - a preliminary estimate that points users to a dermatologist.
 
@@ -76,7 +98,51 @@ Set the backend base URL in `lib/services/api_config.dart`:
 - Physical device: your computer's LAN IP, e.g. `http://192.168.1.23:8000/api`
   (and run Django with `python manage.py runserver 0.0.0.0:8000`, same WiFi network)
 
-Open the folder in Android Studio and run.
+Open the folder in Android Studio and run, or use `flutter run` from `skin_mobile/`.
+
+The weekly report uses `share_plus` (installed by `flutter pub get`). Local notifications for
+reminders are not implemented yet.
+
+#### Day-to-day commands (local, no Docker)
+
+```
+# Backend (from skin_backend/, venv active)
+python manage.py runserver
+python manage.py test                       # backend tests (Gemini and the AI model are mocked)
+
+# Web (from skin_web/)
+npm start
+npm run build                               # production build check
+
+# Mobile (from skin_mobile/)
+flutter run
+flutter analyze
+flutter test
+```
+
+#### Useful backend commands
+
+```
+python manage.py seed_skin_conditions                  # 8 conditions with EN + MK text
+python manage.py fill_missing_translations             # fill empty *_en fields (needs GEMINI_API_KEY)
+python manage.py regenerate_recommendations --help     # rebuild cached recommendations for a condition
+python manage.py seed_demo_tracking --email you@example.com --days 30 --reset
+```
+
+`seed_demo_tracking` is **dev only** (it refuses to run when `DEBUG` is False). It fills one
+existing user's tracker with synthetic check-ins - including planted patterns such as poor
+sleep followed by worse breakouts and luteal-phase flare-ups - plus a few products and
+reminder settings with cycle tracking on. `--reset` first deletes only that user's tracking
+data. Use it to see the timeline and insights without logging for weeks.
+
+#### Trying the tracker
+
+1. Start the backend, web and (optionally) the mobile app as above, and log in.
+2. Either log a few check-ins yourself, or run `seed_demo_tracking` for your account.
+3. Open **Track**: do a check-in, then look at Timeline, AI insights, Routine and Weekly
+   report. On a scan result, use **Save to tracking** to add the scan to your timeline.
+4. A brand-new account shows "Start tracking your skin", and insights show "Not enough data
+   yet" until 7 days are logged.
 
 ### 2. Docker Compose (backend + web + Postgres)
 

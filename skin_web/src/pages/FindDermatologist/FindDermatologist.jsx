@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { MapPin, Phone, Globe, StickyNote, Contact, Navigation } from 'lucide-react';
 import { useLang } from '../../context/LanguageContext';
 import { dermatologistsAPI } from '../../services/api';
-import PageHeroWave from '../../components/decor/PageHeroWave';
 import './FindDermatologist.css';
 
 // Same 11 cities core/services/geo.py's MK_CITY_COORDS knows about (and
@@ -27,11 +26,13 @@ const CITY_STORAGE_KEY = 'skinscan-derm-city';
 // dermatologist_list_screen.dart) since native location permissions don't
 // have the HTTPS restriction.
 export default function FindDermatologist() {
-    const { t } = useLang();
+    const { t, lang } = useLang();
     const [dermatologists, setDermatologists] = useState([]);
     const [loading, setLoading] = useState(true);
     const [city, setCity] = useState(() => localStorage.getItem(CITY_STORAGE_KEY) || '');
 
+    // Refetches on city AND language change (notes/clinic text are localized).
+    // The old list stays visible while the new one loads.
     useEffect(() => {
         let cancelled = false;
         const load = async () => {
@@ -47,7 +48,7 @@ export default function FindDermatologist() {
         };
         load();
         return () => { cancelled = true; };
-    }, [city]);
+    }, [city, lang]);
 
     const handleCityChange = (e) => {
         const next = e.target.value;
@@ -57,27 +58,20 @@ export default function FindDermatologist() {
     };
 
     if (loading && dermatologists.length === 0) {
-        return <div className="fd-loading">{t('common.loading')}</div>;
+        return <div className="pt-loading">{t('common.loading')}</div>;
     }
 
     return (
         <div className="find-derm-page">
-            <div className="page-hero-band">
-                <PageHeroWave />
-                <div className="page-hero-inner">
-                    <div className="page-header">
-                        <div>
-                            <h1 className="page-title">{t('findDermatologist.title')}</h1>
-                            <p className="page-subtitle">{t('findDermatologist.subtitle')}</p>
-                        </div>
-                    </div>
-
-                </div>
+            <div className="pt-page-header">
+                <p className="pt-eyebrow">{t('findDermatologist.eyebrow')}</p>
+                <h1 className="pt-title">{t('findDermatologist.title')}</h1>
+                <p className="pt-subtitle">{t('findDermatologist.subtitle')}</p>
             </div>
 
-            <div className="fd-filter-bar">
+            <div className="pt-card fd-filter-bar">
                 <div className="fd-city-picker">
-                    <Navigation size={15} strokeWidth={1.8} />
+                    <Navigation size={16} strokeWidth={1.8} />
                     <label htmlFor="fd-city-select">{t('findDermatologist.yourCity')}</label>
                     <select id="fd-city-select" value={city} onChange={handleCityChange}>
                         <option value="">{t('findDermatologist.anyCity')}</option>
@@ -92,56 +86,59 @@ export default function FindDermatologist() {
             </div>
 
             {dermatologists.length === 0 ? (
-                <div className="fd-empty">
-                    <div className="fd-empty-icon"><Contact size={24} strokeWidth={1.6} /></div>
-                    <span className="fd-empty-title">{t('findDermatologist.empty')}</span>
-                    <span className="fd-empty-sub">{t('findDermatologist.emptySub')}</span>
+                <div className="pt-card fd-empty">
+                    <span className="pt-icon-chip"><Contact size={20} strokeWidth={1.7} /></span>
+                    <span className="pt-h2">{t('findDermatologist.empty')}</span>
+                    <span className="pt-subtitle" style={{ marginTop: 0 }}>{t('findDermatologist.emptySub')}</span>
                 </div>
             ) : (
-                <div className="fd-list">
+                <div className={`fd-list${loading ? ' pt-refreshing' : ''}`}>
                     {dermatologists.map((d) => (
-                        <div key={d.id} className="fd-card">
-                            <div className="fd-card-main">
-                                <div className="fd-card-name-row">
+                        <div key={d.id} className="pt-card fd-card">
+                            <div className="fd-card-head">
+                                <span className="fd-initials">
+                                    {(d.name || '?').replace(/^Д-р\.?\s*|^Dr\.?\s*/i, '').split(' ').slice(0, 2).map(w => w[0]).join('')}
+                                </span>
+                                <div className="fd-card-title">
                                     <h3 className="fd-card-name">{d.name}</h3>
-                                    {d.distance_km != null && (
-                                        <span className="fd-distance-pill">{d.distance_km} км</span>
-                                    )}
+                                    {d.clinic_name && <div className="fd-card-clinic">{d.clinic_name}</div>}
                                 </div>
-                                {d.clinic_name && <div className="fd-card-clinic">{d.clinic_name}</div>}
+                                {d.distance_km != null && (
+                                    <span className="pt-chip fd-distance">{d.distance_km} км</span>
+                                )}
+                            </div>
 
-                                <div className="fd-card-details">
-                                    {(d.city || d.address) && (
-                                        <div className="fd-card-row">
-                                            <MapPin size={14} strokeWidth={1.8} />
-                                            <span>{[d.city, d.address].filter(Boolean).join(' · ')}</span>
-                                        </div>
-                                    )}
-                                    {d.notes && (
-                                        <div className="fd-card-row">
-                                            <StickyNote size={14} strokeWidth={1.8} />
-                                            <span>{d.notes}</span>
-                                        </div>
-                                    )}
-                                </div>
+                            <div className="fd-card-details">
+                                {(d.city || d.address) && (
+                                    <div className="fd-card-row">
+                                        <MapPin size={14} strokeWidth={1.8} />
+                                        <span>{[d.city, d.address].filter(Boolean).join(' · ')}</span>
+                                    </div>
+                                )}
+                                {d.notes && (
+                                    <div className="fd-card-row">
+                                        <StickyNote size={14} strokeWidth={1.8} />
+                                        <span>{d.notes}</span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="fd-card-actions">
                                 {d.phone && (
-                                    <a className="fd-action-btn" href={`tel:${d.phone}`}>
+                                    <a className="pt-btn" href={`tel:${d.phone}`}>
                                         <Phone size={15} strokeWidth={1.8} />
-                                        <span>{t('findDermatologist.call')}</span>
+                                        {t('findDermatologist.call')}
                                     </a>
                                 )}
                                 {d.website && (
                                     <a
-                                        className="fd-action-btn"
+                                        className="pt-btn pt-btn--ghost"
                                         href={d.website}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >
                                         <Globe size={15} strokeWidth={1.8} />
-                                        <span>{t('findDermatologist.website')}</span>
+                                        {t('findDermatologist.website')}
                                     </a>
                                 )}
                             </div>
