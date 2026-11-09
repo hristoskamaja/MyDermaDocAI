@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from . import constants as c
+from .food_tags import clean_food_tags
 from .models import DailyLog, ReminderSettings, SkincareProduct, TrackedScan
 
 
@@ -51,6 +52,12 @@ class DailyLogSerializer(serializers.ModelSerializer):
 
     def validate_routine_pm(self, value):
         return self._validate_product_ids(value)
+
+    def validate_food_tags(self, value):
+        try:
+            return clean_food_tags(value)
+        except ValueError as error:
+            raise serializers.ValidationError(str(error))
 
     def validate_notes(self, value):
         if len(value) > 2000:

@@ -84,6 +84,9 @@
 }
 .pt-subtitle { font-size: 15px; color: var(--text-muted); margin-top: var(--space-2); }
 .pt-page-header { margin-bottom: var(--space-5); }
+/* Focused single-column pages (scan, result, check-in...): one shared width,
+   centered inside the same 1120px container every patient page uses. */
+.pt-narrow { width: 100%; max-width: 760px; margin-left: auto; margin-right: auto; }
 .pt-h2 {
     font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--text);
 }

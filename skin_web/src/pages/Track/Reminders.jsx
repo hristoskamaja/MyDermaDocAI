@@ -73,7 +73,7 @@ export default function Reminders() {
     const time = (settings.checkin_time || '20:00').slice(0, 5);
 
     return (
-        <div className="tr-stack tr-narrow">
+        <div className="tr-stack pt-narrow">
             <div>
                 <h2 className="pt-h2">{t('track.reminders.title')}</h2>
                 <p className="tr-muted">{t('track.reminders.subtitle')}</p>

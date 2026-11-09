@@ -20,7 +20,7 @@ from analyses.services.gemini_service import _generate_content_with_retry, _make
 from tracking.models import InsightCache, SkincareProduct, DailyLog
 
 from . import texts
-from .insights_engine import compute_insights
+from .insights_engine import CUSTOM_PLACEHOLDER, compute_insights
 from .weekly import compute_weekly_report
 
 logger = logging.getLogger(__name__)
@@ -75,7 +75,12 @@ def _findings_hash(findings, lang):
 
 def _phrasing_prompt(findings, lang):
     language = "Macedonian" if lang == "mk" else "English"
-    items = [{"id": f["id"], "sentence": f[f"template_{lang}"]} for f in findings]
+    # Custom food names are user-typed text: they never reach the prompt. A
+    # placeholder stands in for them and is swapped back after phrasing.
+    items = [
+        {"id": f["id"], "sentence": f.get(f"template_masked_{lang}") or f[f"template_{lang}"]}
+        for f in findings
+    ]
     return (
         f"Rewrite each sentence below in simple, friendly {language}. Keep every number and fact "
         "exactly as given. These describe patterns in a person's own skin diary.\n"
@@ -93,6 +98,11 @@ def _phrase_with_gemini(findings, lang):
     result = {}
     for f in findings:
         text = data.get(f["id"]) if isinstance(data, dict) else None
+        if f.get("custom_food"):
+            # The placeholder must survive; then the user's own tag goes back in.
+            if not isinstance(text, str) or CUSTOM_PLACEHOLDER not in text:
+                raise ValueError(f"Placeholder lost in Gemini phrasing for {f['id']}")
+            text = text.replace(CUSTOM_PLACEHOLDER, f["custom_food"])
         if not _is_safe(text):
             raise ValueError(f"Unusable Gemini phrasing for {f['id']}")
         result[f["id"]] = text.strip()
@@ -201,7 +211,11 @@ def _answer_prompt(summary, question, lang):
     compact = {
         "weekly_report": {k: v for k, v in summary["weekly_report"].items() if k != "top_pattern"},
         "findings": [
-            {k: f[k] for k in ("category", "factor", "area", "lag", "direction", "effect", "n_with", "n_without", "strength", "confidence")}
+            {
+                **{k: f[k] for k in ("category", "area", "lag", "direction", "effect", "n_with", "n_without", "strength", "confidence")},
+                # Custom food names are user text and are never sent to Gemini.
+                "factor": "custom_food" if f.get("custom_food") else f["factor"],
+            }
             for f in summary["findings"]
         ],
     }

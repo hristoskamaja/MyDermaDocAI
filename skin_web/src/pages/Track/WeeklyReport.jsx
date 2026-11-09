@@ -180,7 +180,7 @@ export default function WeeklyReport() {
     ];
 
     return (
-        <div className="tr-stack tr-narrow">
+        <div className="tr-stack pt-narrow">
             <div>
                 <h2 className="pt-h2">{t('track.weekly.title')}</h2>
                 <p className="tr-muted">{t('track.weekly.subtitle')}</p>

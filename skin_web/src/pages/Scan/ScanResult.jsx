@@ -268,7 +268,7 @@ export default function ScanResult() {
     })).filter(g => g.items.length > 0);
 
     return (
-        <div className="scan-result-page">
+        <div className="scan-result-page pt-narrow">
             <div className="result-title-block">
                 <div className="result-title-row">
                     <SeverityBadge severity={condition?.severity} t={t} />

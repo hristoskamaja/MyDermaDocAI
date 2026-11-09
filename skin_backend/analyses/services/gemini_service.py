@@ -34,8 +34,8 @@ _RETRY_BACKOFF_SECONDS = 1.5
 # a single call can hang for minutes, which hangs the whole scan-skin /
 # chat request (and eventually the mobile/web client's own timeout fires
 # first, showing "TimeoutException..." with no useful fallback content).
-# 15s per attempt keeps the worst case (3 attempts + backoff, only on
-# retryable 429/503 errors) under the mobile app's 60s scan-skin timeout.
+# Scan/recommendation calls are additionally capped by a time budget (see
+# _RECOMMENDATION_BUDGET_S).
 #
 # Built defensively at import time: if the installed google-genai version
 # doesn't recognize this field, we fall back to no explicit timeout
@@ -46,6 +46,20 @@ _RETRY_BACKOFF_SECONDS = 1.5
 # languages), so it gets a larger timeout than the short chat answers.
 _GEMINI_TIMEOUT_MS = 15_000
 _GEMINI_LONG_TIMEOUT_MS = 40_000
+# Chat is not part of the scan request, so it can wait longer (Gemini
+# sometimes answers with 504 DEADLINE_EXCEEDED after ~20s).
+_GEMINI_CHAT_TIMEOUT_MS = 45_000
+
+# Recommendations run inside the scan request: a retry is only started if
+# it can still finish within this budget, so the worst case stays below the
+# mobile app's 60s scan timeout (first attempt up to 40s, a retry only if
+# elapsed + backoff + 40s <= 55s).
+_RECOMMENDATION_BUDGET_S = 55
+
+# Chat: 1 try + 2 retries, retrying 504 too; the last retry uses a lighter model.
+_CHAT_MAX_ATTEMPTS = 3
+_CHAT_RETRYABLE_STATUS_CODES = {429, 503, 504}
+GEMINI_FALLBACK_MODEL = "gemini-flash-lite-latest"
 
 
 def _build_http_options(timeout_ms):
@@ -57,38 +71,68 @@ def _build_http_options(timeout_ms):
 
 _HTTP_OPTIONS = _build_http_options(_GEMINI_TIMEOUT_MS)
 _LONG_HTTP_OPTIONS = _build_http_options(_GEMINI_LONG_TIMEOUT_MS)
+_CHAT_HTTP_OPTIONS = _build_http_options(_GEMINI_CHAT_TIMEOUT_MS)
 
 
-def _make_client(api_key: str, long_timeout: bool = False):
-    http_options = _LONG_HTTP_OPTIONS if long_timeout else _HTTP_OPTIONS
+def _make_client(api_key: str, long_timeout: bool = False, chat_timeout: bool = False):
+    if chat_timeout:
+        http_options = _CHAT_HTTP_OPTIONS
+    else:
+        http_options = _LONG_HTTP_OPTIONS if long_timeout else _HTTP_OPTIONS
     if http_options is not None:
         return genai.Client(api_key=api_key, http_options=http_options)
     return genai.Client(api_key=api_key)
 
 
-def _generate_content_with_retry(client, prompt, config):
+def _generate_content_with_retry(
+    client,
+    prompt,
+    config,
+    *,
+    max_attempts=_MAX_ATTEMPTS,
+    retryable_codes=_RETRYABLE_STATUS_CODES,
+    fallback_model=None,
+    attempt_timeout_s=None,
+    budget_s=None,
+):
     """
-    Same call as client.models.generate_content, but with a few automatic
-    retries on 429/503 (model temporarily overloaded - very common on the
-    free tier). After the last attempt, re-raises the real error so the
+    Same call as client.models.generate_content, but with automatic retries
+    on temporary errors (model overloaded / rate limit; chat also retries
+    504 timeouts). After the last attempt, re-raises the real error so the
     existing except blocks handle it exactly as before (fallback content).
+
+    - fallback_model: used on the LAST attempt only (e.g. a lighter model).
+    - budget_s + attempt_timeout_s: a retry is only started if it could still
+      finish inside the budget, which keeps the worst case under a caller's
+      own deadline (e.g. the mobile app's 60s scan timeout).
     """
+    started = time.monotonic()
     last_error = None
 
-    for attempt in range(_MAX_ATTEMPTS):
+    for attempt in range(max_attempts):
+        is_last_attempt = attempt == max_attempts - 1
+        model = fallback_model if (is_last_attempt and attempt > 0 and fallback_model) else GEMINI_MODEL
         try:
             return client.models.generate_content(
-                model=GEMINI_MODEL,
+                model=model,
                 contents=prompt,
                 config=config,
             )
         except APIError as error:
             last_error = error
             status_code = getattr(error, "code", None)
-            is_last_attempt = attempt == _MAX_ATTEMPTS - 1
 
-            if status_code in _RETRYABLE_STATUS_CODES and not is_last_attempt:
-                time.sleep(_RETRY_BACKOFF_SECONDS * (attempt + 1))
+            if status_code in retryable_codes and not is_last_attempt:
+                backoff = _RETRY_BACKOFF_SECONDS * (attempt + 1)
+                if budget_s is not None and attempt_timeout_s is not None:
+                    elapsed = time.monotonic() - started
+                    if elapsed + backoff + attempt_timeout_s > budget_s:
+                        raise
+                logger.warning(
+                    "Gemini %s on attempt %d/%d (model=%s); retrying.",
+                    status_code, attempt + 1, max_attempts, model,
+                )
+                time.sleep(backoff)
                 continue
 
             raise
@@ -336,6 +380,8 @@ def generate_recommendations_detailed(condition_name: str, severity: str) -> Dic
                 temperature=0.4,
                 max_output_tokens=8192,
             ),
+            attempt_timeout_s=_GEMINI_LONG_TIMEOUT_MS / 1000,
+            budget_s=_RECOMMENDATION_BUDGET_S,
         )
 
         if not response.text:
@@ -482,11 +528,14 @@ def generate_chat_answer(
     )
 
     try:
-        client = _make_client(api_key)
+        client = _make_client(api_key, chat_timeout=True)
         response = _generate_content_with_retry(
             client,
             prompt,
             types.GenerateContentConfig(temperature=0.4),
+            max_attempts=_CHAT_MAX_ATTEMPTS,
+            retryable_codes=_CHAT_RETRYABLE_STATUS_CODES,
+            fallback_model=GEMINI_FALLBACK_MODEL,
         )
 
         text = (response.text or "").strip()

@@ -11,6 +11,7 @@ from django.db import models
 from analyses.models import Analysis
 
 from . import constants as c
+from . import food_tags
 
 
 def _choices(values):
@@ -46,7 +47,11 @@ def validate_areas(value):
 
 
 def validate_food_tags(value):
-    validate_string_list(c.FOOD_TAGS)(value)
+    """Fixed tags plus safe custom tags (the serializer normalizes before saving)."""
+    try:
+        food_tags.clean_food_tags(value)
+    except ValueError as error:
+        raise ValidationError(str(error))
 
 
 class DailyLog(models.Model):

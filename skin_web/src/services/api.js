@@ -209,6 +209,8 @@ export const trackingAPI = {
     ask:           (data)       => api.post('/tracking/ask/', data),
     getSuggestions:()           => api.get('/tracking/ask/suggestions/'),
 
+    getFoodSuggestions: ()      => api.get('/tracking/food-suggestions/'),
+
     getReminders:    ()         => api.get('/tracking/reminders/'),
     updateReminders: (data)     => api.patch('/tracking/reminders/', data),
 

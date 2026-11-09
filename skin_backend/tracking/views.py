@@ -25,6 +25,8 @@ from .serializers import (
     SkincareProductSerializer,
     TrackedScanSerializer,
 )
+from . import constants as c
+from .food_tags import is_custom_food_tag
 from .services import insights_text, series
 from .services.streaks import compute_streaks, week_strip
 from .services.weekly import compute_weekly_report
@@ -146,6 +148,19 @@ def logs_collection(request):
     start, end = date_range(request)
     logs = DailyLog.objects.filter(user=request.user, date__gte=start, date__lte=end).order_by("date")
     return Response(DailyLogSerializer(logs, many=True, context={"request": request}).data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def food_suggestions(request):
+    """The user's own recently used custom food tags (newest first)."""
+    seen = []
+    recent = DailyLog.objects.filter(user=request.user).order_by("-date").values_list("food_tags", flat=True)[:90]
+    for tags in recent:
+        for tag in tags or []:
+            if is_custom_food_tag(tag) and tag not in seen:
+                seen.append(tag)
+    return Response({"tags": seen[:c.MAX_FOOD_SUGGESTIONS]})
 
 
 @api_view(["GET", "PUT", "DELETE"])

@@ -48,3 +48,37 @@
     .home-scan-card { padding: var(--space-5); }
     .home-scan-icon { display: none; }
 }
+
+/* ── Lower sections: how it works, promo cards, tips, disclaimer ───────────── */
+.home-section { display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-3); }
+.home-section-title { font-family: var(--font-display); font-size: 24px; font-weight: 600; color: var(--text); }
+
+.home-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+.home-step { display: flex; flex-direction: column; gap: var(--space-2); position: relative; }
+.home-step-num { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; color: var(--primary); }
+.home-step-icon { color: var(--primary); margin: 2px 0; }
+
+.home-card-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.home-card-title--lg { font-family: var(--font-display); font-size: 24px; font-weight: 600; line-height: 1.2; }
+.home-card-text { font-size: 14px; line-height: 1.55; color: var(--text-muted); }
+
+.home-cta-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-top: var(--space-3); }
+.home-cta { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-6); }
+.home-cta .pt-icon-chip { margin-bottom: var(--space-2); }
+.home-cta-btn { margin-top: var(--space-3); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+
+.home-tips { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+.home-tip { display: flex; flex-direction: column; gap: var(--space-2); }
+.home-tip .pt-icon-chip { margin-bottom: var(--space-2); }
+
+.home-disclaimer {
+    display: flex; align-items: flex-start; gap: var(--space-2);
+    margin-top: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--border);
+    font-size: 12.5px; line-height: 1.55; color: var(--text-light);
+}
+.home-disclaimer svg { flex-shrink: 0; margin-top: 2px; }
+
+@media (max-width: 860px) {
+    .home-steps, .home-tips, .home-cta-row { grid-template-columns: 1fr; }
+    .home-cta { padding: var(--space-5); }
+}

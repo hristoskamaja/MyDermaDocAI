@@ -24,6 +24,8 @@ urlpatterns = [
     path("logs/<isodate:day>/", views.log_detail, name="tracking_log_detail"),
     path("logs/<isodate:day>/photo/", views.log_photo, name="tracking_log_photo"),
 
+    path("food-suggestions/", views.food_suggestions, name="tracking_food_suggestions"),
+
     path("products/", views.products_collection, name="tracking_products"),
     path("products/<int:id>/", views.product_detail, name="tracking_product_detail"),
 

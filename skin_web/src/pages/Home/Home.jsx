@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, History as HistoryIcon, Contact, Sun, ScanLine, ImageIcon } from 'lucide-react';
+import { ArrowRight, History as HistoryIcon, Contact, Sun, ScanLine, ImageIcon, Sparkles, LineChart, Search, ShieldCheck, Info } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LanguageContext';
 import { analysesAPI } from '../../services/api';
@@ -104,6 +104,68 @@ export default function Home() {
                 <Sun size={16} strokeWidth={1.8} />
                 <span>{t('home.tip')}</span>
             </div>
+
+            <section className="home-section">
+                <h2 className="home-section-title">{t('home.howTitle')}</h2>
+                <ol className="home-steps">
+                    {[
+                        { n: 1, Icon: ScanLine },
+                        { n: 2, Icon: Search },
+                        { n: 3, Icon: LineChart },
+                    ].map(({ n, Icon }) => (
+                        <li key={n} className="pt-card home-step">
+                            <span className="home-step-num">{n}</span>
+                            <Icon size={20} strokeWidth={1.7} className="home-step-icon" aria-hidden="true" />
+                            <h3 className="home-card-title">{t(`home.how${n}Title`)}</h3>
+                            <p className="home-card-text">{t(`home.how${n}Sub`)}</p>
+                        </li>
+                    ))}
+                </ol>
+            </section>
+
+            <div className="home-cta-row">
+                <section className="pt-card home-cta">
+                    <span className="pt-icon-chip"><Sparkles size={18} strokeWidth={1.8} /></span>
+                    <p className="pt-eyebrow">{t('home.trackerEyebrow')}</p>
+                    <h2 className="home-card-title home-card-title--lg">{t('home.trackerTitle')}</h2>
+                    <p className="home-card-text">{t('home.trackerSub')}</p>
+                    <Link to="/track" className="pt-btn home-cta-btn">
+                        {t('home.trackerCta')} <ArrowRight size={16} strokeWidth={1.8} />
+                    </Link>
+                </section>
+
+                <section className="pt-card home-cta">
+                    <span className="pt-icon-chip"><Contact size={18} strokeWidth={1.8} /></span>
+                    <p className="pt-eyebrow">{t('nav.doctorsTab')}</p>
+                    <h2 className="home-card-title home-card-title--lg">{t('home.dermTitle')}</h2>
+                    <p className="home-card-text">{t('home.dermSub')}</p>
+                    <Link to="/find-dermatologist" className="pt-btn pt-btn--ghost home-cta-btn">
+                        {t('home.dermCta')} <ArrowRight size={16} strokeWidth={1.8} />
+                    </Link>
+                </section>
+            </div>
+
+            <section className="home-section">
+                <h2 className="home-section-title">{t('home.tipsTitle')}</h2>
+                <div className="home-tips">
+                    {[
+                        { n: 1, Icon: Sun },
+                        { n: 2, Icon: Search },
+                        { n: 3, Icon: ShieldCheck },
+                    ].map(({ n, Icon }) => (
+                        <article key={n} className="pt-card home-tip">
+                            <span className="pt-icon-chip"><Icon size={18} strokeWidth={1.8} /></span>
+                            <h3 className="home-card-title">{t(`home.tip${n}Title`)}</h3>
+                            <p className="home-card-text">{t(`home.tip${n}Sub`)}</p>
+                        </article>
+                    ))}
+                </div>
+            </section>
+
+            <p className="home-disclaimer">
+                <Info size={14} strokeWidth={1.8} aria-hidden="true" />
+                <span>{t('home.disclaimer')}</span>
+            </p>
         </div>
     );
 }

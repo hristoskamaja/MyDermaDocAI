@@ -5,7 +5,7 @@ import { useLang } from '../../context/LanguageContext';
 import { trackingAPI } from '../../services/api';
 import LoadState from './components/LoadState';
 import { StartEmpty } from './components/EmptyState';
-import { fmt, levelClass, longDate } from './trackUtils';
+import { fmt, foodLabel, levelClass, longDate } from './trackUtils';
 
 export default function TrackHub() {
     const { t, lang } = useLang();
@@ -50,7 +50,7 @@ export default function TrackHub() {
     const logged = today.logged_today;
 
     const foodSummary = log?.food_tags?.length
-        ? log.food_tags.slice(0, 2).map((k) => t(`track.food.${k}`)).join(', ')
+        ? log.food_tags.slice(0, 2).map((k) => foodLabel(t, k)).join(', ')
         : t('track.hub.notLogged');
     const sleepSummary = log?.sleep_hours != null
         ? fmt(t('track.hub.hoursShort'), { n: log.sleep_hours })

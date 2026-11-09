@@ -7,7 +7,7 @@ import LoadState from './components/LoadState';
 import FaceMap from './components/FaceMap';
 import useTrackingPhoto from './useTrackingPhoto';
 import {
-    AREAS, FOOD_TAGS, SLEEP_QUALITIES, CYCLE_PHASES, SEVERITY_KEYS,
+    AREAS, FOOD_TAGS, MAX_FOOD_TAGS, MAX_CUSTOM_FOOD_LENGTH, normalizeFoodTag, foodLabel, SLEEP_QUALITIES, CYCLE_PHASES, SEVERITY_KEYS,
     apiErrorText, fmt, longDate, toISODate,
 } from './trackUtils';
 
@@ -18,6 +18,16 @@ const FACES = [
     { value: 4, Icon: Smile },
     { value: 5, Icon: Laugh },
 ];
+
+const DISMISSED_KEY = 'skinscan.dismissedFoodSuggestions';
+
+// Suggestions the user removed; a per-device convenience only.
+function readDismissed() {
+    try { return JSON.parse(localStorage.getItem(DISMISSED_KEY)) || []; } catch { return []; }
+}
+function writeDismissed(list) {
+    try { localStorage.setItem(DISMISSED_KEY, JSON.stringify(list)); } catch { /* storage unavailable */ }
+}
 
 function toggle(list, value) {
     return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
@@ -37,6 +47,10 @@ export default function CheckIn() {
     const [acne, setAcne] = useState(null);
     const [areas, setAreas] = useState([]);
     const [food, setFood] = useState([]);
+    const [suggestions, setSuggestions] = useState([]);
+    const [dismissed, setDismissed] = useState(readDismissed);
+    const [foodInput, setFoodInput] = useState('');
+    const [foodError, setFoodError] = useState('');
     const [sleepHours, setSleepHours] = useState(null);
     const [sleepQuality, setSleepQuality] = useState(null);
     const [stress, setStress] = useState(null);
@@ -62,6 +76,10 @@ export default function CheckIn() {
             try {
                 const [prodRes, remRes] = await Promise.all([trackingAPI.getProducts(), trackingAPI.getReminders()]);
                 if (cancelled) return;
+                // Suggestions are optional: a failure must not block the check-in.
+                trackingAPI.getFoodSuggestions()
+                    .then((res) => { if (!cancelled) setSuggestions(res.data?.tags || []); })
+                    .catch(() => {});
                 setProducts(prodRes.data);
                 setCycleEnabled(remRes.data.cycle_tracking_enabled);
 
@@ -121,6 +139,37 @@ export default function CheckIn() {
         if (hasSavedPhoto) setRemovePhoto(true);
     };
 
+    // Custom foods shown as chips: the ones picked today plus remembered ones.
+    const customFoods = [
+        ...food.filter((tag) => !FOOD_TAGS.includes(tag)),
+        ...suggestions.filter((tag) => !dismissed.includes(tag) && !food.includes(tag)),
+    ];
+
+    const addFood = () => {
+        const raw = foodInput.trim();
+        if (!raw) return;
+        const tag = normalizeFoodTag(raw);
+        if (!tag) { setFoodError(t('track.checkin.foodInvalid')); return; }
+        if (!food.includes(tag)) {
+            if (food.length >= MAX_FOOD_TAGS) { setFoodError(fmt(t('track.checkin.foodMax'), { n: MAX_FOOD_TAGS })); return; }
+            setFood((prev) => [...prev, tag]);
+        }
+        // Adding something the user dismissed earlier brings it back.
+        if (dismissed.includes(tag)) {
+            const next = dismissed.filter((d) => d !== tag);
+            setDismissed(next); writeDismissed(next);
+        }
+        setFoodInput('');
+        setFoodError('');
+    };
+
+    // On a selected chip: unselect and forget it; on a suggestion: hide it.
+    const removeCustomFood = (tag) => {
+        setFood((prev) => prev.filter((v) => v !== tag));
+        const next = [...new Set([...dismissed, tag])];
+        setDismissed(next); writeDismissed(next);
+    };
+
     const handleSave = async () => {
         if (!canSave) return;
         setSaving(true);
@@ -166,7 +215,7 @@ export default function CheckIn() {
     if (loading || loadError) return <LoadState loading={loading} error={loadError} />;
 
     return (
-        <div className="tr-stack tr-checkin">
+        <div className="tr-stack tr-checkin pt-narrow">
             <div>
                 <h2 className="pt-h2">{t('track.checkin.title')}</h2>
                 <p className="tr-muted">{fmt(t('track.checkin.forDate'), { date: longDate(day, lang) })} · {t('track.checkin.subtitle')}</p>
@@ -244,10 +293,49 @@ export default function CheckIn() {
                             aria-pressed={food.includes(key)}
                             onClick={() => setFood((prev) => toggle(prev, key))}
                         >
-                            {t(`track.food.${key}`)}
+                            {foodLabel(t, key)}
                         </button>
                     ))}
+                    {customFoods.map((tag) => {
+                        const on = food.includes(tag);
+                        return (
+                            <span key={tag} className={`tr-chip tr-chip--custom${on ? ' tr-chip--on' : ''}`}>
+                                <button
+                                    type="button"
+                                    className="tr-chip-main"
+                                    aria-pressed={on}
+                                    onClick={() => setFood((prev) => toggle(prev, tag))}
+                                >
+                                    {tag}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="tr-chip-x"
+                                    aria-label={fmt(t('track.checkin.foodRemove'), { name: tag })}
+                                    onClick={() => removeCustomFood(tag)}
+                                >
+                                    <X size={13} strokeWidth={2} />
+                                </button>
+                            </span>
+                        );
+                    })}
                 </div>
+                <div className="tr-add-row">
+                    <input
+                        className="pt-input"
+                        type="text"
+                        value={foodInput}
+                        maxLength={MAX_CUSTOM_FOOD_LENGTH}
+                        placeholder={t('track.checkin.foodAddPlaceholder')}
+                        aria-label={t('track.checkin.foodAdd')}
+                        onChange={(e) => { setFoodInput(e.target.value); setFoodError(''); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addFood(); } }}
+                    />
+                    <button type="button" className="pt-btn pt-btn--ghost" onClick={addFood} disabled={!foodInput.trim()}>
+                        {t('track.checkin.foodAdd')}
+                    </button>
+                </div>
+                {foodError && <p className="tr-hint tr-error" role="alert">{foodError}</p>}
             </section>
 
             {/* 4 - sleep */}

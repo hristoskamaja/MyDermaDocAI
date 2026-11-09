@@ -81,7 +81,7 @@ export default function Scan() {
     };
 
     return (
-        <div className="scan-page">
+        <div className="scan-page pt-narrow">
             <div className="pt-page-header">
                 <p className="pt-eyebrow">{t('scan.eyebrow')}</p>
                 <h1 className="pt-title">{t('scan.title')}</h1>

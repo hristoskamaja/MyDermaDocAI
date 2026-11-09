@@ -3,6 +3,21 @@
 export const AREAS = ['forehead', 'nose', 'left_cheek', 'right_cheek', 'chin', 'jawline'];
 export const SCAN_AREAS = [...AREAS, 'neck', 'chest', 'back', 'arms', 'other'];
 export const FOOD_TAGS = ['dairy', 'sugar', 'fried', 'alcohol', 'caffeine', 'water'];
+
+// Custom food tags: limits mirror the backend (tracking/constants.py).
+export const MAX_FOOD_TAGS = 12;
+export const MAX_CUSTOM_FOOD_LENGTH = 30;
+const CUSTOM_FOOD_RE = /^[\p{L}\p{N}]+(?:[ '-][\p{L}\p{N}]+)*$/u;
+
+// Lowercase, trimmed, single-spaced; returns '' when the text is not allowed.
+export function normalizeFoodTag(raw) {
+    const tag = String(raw || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase();
+    return tag.length <= MAX_CUSTOM_FOOD_LENGTH && CUSTOM_FOOD_RE.test(tag) ? tag : '';
+}
+
+// Fixed tags are translated; custom tags are shown as the user typed them.
+export const foodLabel = (t, key) => (FOOD_TAGS.includes(key) ? t(`track.food.${key}`) : key);
+
 export const SLEEP_QUALITIES = ['poor', 'okay', 'great'];
 export const CYCLE_PHASES = ['menstrual', 'follicular', 'ovulation', 'luteal'];
 export const STEP_TYPES = ['cleanse', 'treat', 'hydrate', 'protect'];

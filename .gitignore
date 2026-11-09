@@ -10,9 +10,11 @@ Thumbs.db
 # Claude Code (local settings) and design reference screenshots
 .claude/settings.local.json
 design-reference/
+.claude/
 
 # Docker/K8s
 .env
 k8s/*-secret.yaml
 DOCKER_K8S_GUIDE.md
 commit_*.ps1
+

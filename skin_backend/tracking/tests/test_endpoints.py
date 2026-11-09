@@ -122,7 +122,7 @@ class LogTests(TrackingTestCase):
     def test_validation(self):
         bad_payloads = [
             checkin(acne_severity=4), checkin(skin_rating=0), checkin(stress=11),
-            checkin(affected_areas=["elbow"]), checkin(food_tags=["pizza"]),
+            checkin(affected_areas=["elbow"]), checkin(food_tags=["<script>"]),
             checkin(sleep_quality="amazing"), checkin(sleep_hours=30),
             {"date": (timezone.localdate() + timedelta(days=10)).isoformat(), "skin_rating": 3, "acne_severity": 1},
             {"skin_rating": 3, "acne_severity": 1},  # no date

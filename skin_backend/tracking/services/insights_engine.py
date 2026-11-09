@@ -26,10 +26,13 @@ at EARLY_SIGNAL_CONFIDENCE_CAP.
 Wording always describes a pattern in the user's logs, never a cause.
 """
 
+import hashlib
 import math
+from collections import Counter
 from datetime import timedelta
 from statistics import mean, variance
 
+from ..food_tags import is_custom_food_tag
 from . import texts
 
 MIN_LOGGED_DAYS = 7
@@ -49,6 +52,11 @@ _SE_FLOOR = 0.05       # avoids absurd t-values when a group has zero variance
 LOW_SLEEP_HOURS = 6
 HIGH_STRESS = 7
 FOOD_FACTORS = ["dairy", "sugar", "fried", "alcohol"]
+# User-typed food tags are tested like the fixed ones, but only the most
+# frequent ones (each extra test raises the false-positive risk, and a tag
+# needs at least MIN_GROUP days to be testable at all).
+MAX_CUSTOM_FACTORS = 10
+CUSTOM_PLACEHOLDER = "[FOOD]"
 PHASES = ["menstrual", "follicular", "ovulation", "luteal"]
 
 # The only (factor, area) combinations that are tested.
@@ -120,6 +128,20 @@ def _active_products(products, day):
     ]
 
 
+def custom_food_tags(logs):
+    """Valid custom tags that appear on enough days, most frequent first."""
+    counts = Counter(
+        tag for log in logs for tag in set(log.food_tags or []) if is_custom_food_tag(tag)
+    )
+    usable = [(tag, n) for tag, n in counts.items() if n >= MIN_GROUP]
+    usable.sort(key=lambda item: (-item[1], item[0]))
+    return [tag for tag, _ in usable[:MAX_CUSTOM_FACTORS]]
+
+
+def custom_factor_id(tag):
+    return "food_custom_" + hashlib.sha1(tag.encode("utf-8")).hexdigest()[:8]
+
+
 def build_factors(logs, products):
     """
     Returns {factor_id: {"category", "name_en", "name_mk", "values": {date: bool}}}.
@@ -127,8 +149,11 @@ def build_factors(logs, products):
     """
     factors = {}
 
-    def add(factor_id, category, name_en, name_mk):
-        factors[factor_id] = {"category": category, "name_en": name_en, "name_mk": name_mk, "values": {}}
+    def add(factor_id, category, name_en, name_mk, custom_label=None):
+        factors[factor_id] = {
+            "category": category, "name_en": name_en, "name_mk": name_mk,
+            "custom_label": custom_label, "values": {},
+        }
         return factors[factor_id]["values"]
 
     names_en, names_mk = texts.FACTOR_NAMES["en"], texts.FACTOR_NAMES["mk"]
@@ -136,6 +161,10 @@ def build_factors(logs, products):
     low_sleep = add("low_sleep", "sleep", names_en["low_sleep"], names_mk["low_sleep"])
     high_stress = add("high_stress", "stress", names_en["high_stress"], names_mk["high_stress"])
     foods = {f: add(f, "food", names_en[f], names_mk[f]) for f in FOOD_FACTORS}
+    custom_foods = {
+        tag: add(custom_factor_id(tag), "food", tag, tag, custom_label=tag)
+        for tag in custom_food_tags(logs)
+    }
     phases = {p: add(p, "cycle", names_en[p], names_mk[p]) for p in PHASES}
     adherence = add("adherence", "skincare", names_en["adherence"], names_mk["adherence"])
     product_values = {
@@ -151,6 +180,8 @@ def build_factors(logs, products):
             high_stress[day] = log.stress >= HIGH_STRESS
         for food, values in foods.items():
             values[day] = food in (log.food_tags or [])
+        for tag, values in custom_foods.items():
+            values[day] = tag in (log.food_tags or [])
         if log.cycle_phase:
             for phase, values in phases.items():
                 values[day] = log.cycle_phase == phase
@@ -295,6 +326,9 @@ def compute_insights(logs, products=()):
             "strength": "early_signal" if early else "pattern",
             "confidence": _confidence(min_n, effect, test["scale"], early),
         }
+        custom_label = meta.get("custom_label")
+        if custom_label:
+            finding["custom_food"] = custom_label
         for lang in ("en", "mk"):
             prefix = texts.LAG_PREFIX[lang][test["lag"]].format(f=meta[f"name_{lang}"])
             if test["area"]:
@@ -303,6 +337,12 @@ def compute_insights(logs, products=()):
             else:
                 finding[f"template_{lang}"] = texts.acne_template(
                     lang, prefix, direction, mean_with, mean_without, n_with, n_without, early)
+            if custom_label:
+                # Same sentence with the user's text replaced by a placeholder:
+                # this is the only version that is ever sent to Gemini.
+                masked_prefix = texts.LAG_PREFIX[lang][test["lag"]].format(f=CUSTOM_PLACEHOLDER)
+                finding[f"template_masked_{lang}"] = texts.acne_template(
+                    lang, masked_prefix, direction, mean_with, mean_without, n_with, n_without, early)
         candidates.append(finding)
 
     # One finding per factor (the most confident), best first, capped.
