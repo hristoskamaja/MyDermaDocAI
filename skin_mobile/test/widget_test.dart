@@ -1,13 +1,19 @@
 // Small, offline tests: shared Track widgets and the EN/MK string tables.
 // No network, platform plugins or backend are needed.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:provider/provider.dart';
 
 import 'package:skin_mobile/l10n/app_strings.dart';
 import 'package:skin_mobile/providers/locale_provider.dart';
+import 'package:skin_mobile/services/api_client.dart';
+import 'package:skin_mobile/services/locale_storage.dart';
 import 'package:skin_mobile/theme/app_theme.dart';
 import 'package:skin_mobile/widgets/track/track_common.dart';
 import 'package:skin_mobile/widgets/track/track_empty_states.dart';
@@ -52,6 +58,31 @@ void main() {
   test('reminder note says notifications are coming soon, in both languages', () {
     expect(AppStrings.t('en', 'track.reminders.note'), contains('coming soon'));
     expect(AppStrings.t('mk', 'track.reminders.note'), contains('наскоро'));
+  });
+
+  test('network and chat error messages exist in both languages', () {
+    for (final key in ['common.serverUnreachable', 'chat.timeout']) {
+      expect(AppStrings.t('en', key), isNot(key));
+      expect(AppStrings.t('mk', key), isNot(key));
+      expect(AppStrings.t('mk', key), isNot(AppStrings.t('en', key)));
+    }
+  });
+
+  test('a request timeout becomes a clear localized message, not the raw exception', () async {
+    for (final lang in ['en', 'mk']) {
+      LocaleStorage.current = lang;
+      await expectLater(
+        http.runWithClient(
+          () => ApiClient.post('/jwt-auth/login/', {}, auth: false),
+          () => MockClient((_) async => throw TimeoutException('raw detail')),
+        ),
+        throwsA(isA<ApiException>()
+            .having((e) => e.isTimeout, 'isTimeout', true)
+            .having((e) => e.message, 'message', AppStrings.t(lang, 'common.serverUnreachable'))
+            .having((e) => e.message, 'no raw text', isNot(contains('TimeoutException')))),
+      );
+    }
+    LocaleStorage.current = 'en';
   });
 
   test('missing keys fall back to English, then to the key itself', () {

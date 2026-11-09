@@ -47,6 +47,8 @@ class AnalysisService {
     final data = await ApiClient.post(
       '/analyses/$analysisId/chat/',
       {'question': question},
+      // The backend may take up to ~50s to answer; stay above that.
+      timeout: const Duration(seconds: 65),
     );
     return ChatExchange.fromJson(data as Map<String, dynamic>);
   }

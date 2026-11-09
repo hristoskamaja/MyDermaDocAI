@@ -8,6 +8,8 @@ class AppStrings {
       'loading': 'Loading…',
       'retry': 'Retry',
       'somethingWrong': 'Something went wrong. Please try again.',
+      'serverUnreachable':
+          'Cannot reach the server. Check your internet connection and try again.',
     },
     'nav': {
       'home': 'Home',
@@ -355,6 +357,8 @@ class AppStrings {
           'Ask a general question about this condition. This is '
           'AI-generated information, not a diagnosis or personal medical advice.',
       'thinking': 'Thinking…',
+      'timeout':
+          'The answer is taking too long. Please try again in a moment.',
       'placeholder': 'e.g. What could cause this to change?',
     },
     'auth': {
@@ -393,6 +397,8 @@ class AppStrings {
       'loading': 'Вчитување…',
       'retry': 'Обиди се повторно',
       'somethingWrong': 'Нешто тргна наопаку. Пробај повторно.',
+      'serverUnreachable':
+          'Серверот не е достапен. Провери ја интернет врската и пробај повторно.',
     },
     'nav': {
       'home': 'Почетна',
@@ -740,6 +746,8 @@ class AppStrings {
           'Постави општо прашање за оваа состојба. Ова е AI-генерирана '
           'информација, не дијагноза или лична медицинска советка.',
       'thinking': 'Размислувам…',
+      'timeout':
+          'Одговорот одзема премногу време. Обиди се повторно за момент.',
       'placeholder': 'нпр. Што би можело да го предизвика ова да се промени?',
     },
     'auth': {

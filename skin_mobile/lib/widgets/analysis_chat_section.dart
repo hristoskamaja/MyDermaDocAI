@@ -84,7 +84,7 @@ class _AnalysisChatSectionState extends State<AnalysisChatSection> {
       if (!mounted) return;
       setState(() {
         _sending = false;
-        _error = e.message;
+        _error = e.isTimeout ? context.tr('chat.timeout') : e.message;
       });
     } catch (e) {
       if (!mounted) return;

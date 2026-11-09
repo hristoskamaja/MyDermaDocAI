@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -5,6 +6,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_strings.dart';
 import 'api_config.dart';
 import 'locale_storage.dart';
 
@@ -15,7 +17,10 @@ class ApiException implements Exception {
   final String message;
   final dynamic body;
 
-  ApiException(this.message, {this.statusCode, this.body});
+  /// True when the request ran into its client-side timeout.
+  final bool isTimeout;
+
+  ApiException(this.message, {this.statusCode, this.body, this.isTimeout = false});
 
   @override
   String toString() => message;
@@ -194,9 +199,14 @@ class ApiClient {
         }
       }
       return response;
+    } on TimeoutException {
+      throw ApiException(
+        AppStrings.t(LocaleStorage.current, 'common.serverUnreachable'),
+        isTimeout: true,
+      );
     } on SocketException {
       throw ApiException(
-        'Could not reach the server. Check your connection and the API base URL.',
+        AppStrings.t(LocaleStorage.current, 'common.serverUnreachable'),
       );
     } catch (e) {
       throw ApiException('Something went wrong: $e');
@@ -223,6 +233,7 @@ class ApiClient {
     String path,
     Map<String, dynamic> body, {
     bool auth = true,
+    Duration timeout = const Duration(seconds: 30),
   }) {
     return _send(
       () async => http
@@ -231,7 +242,7 @@ class ApiClient {
             headers: await _headers(auth: auth),
             body: jsonEncode(body),
           )
-          .timeout(const Duration(seconds: 30)),
+          .timeout(timeout),
       auth: auth,
     );
   }
